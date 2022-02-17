@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.List;
 
 /**
@@ -29,9 +30,12 @@ public class WorkOrderVO {
     @ApiModel
     public static class WorkOrder extends BaseVO {
 
+        private WorkOrderVO.Group workOrderGroup;
+
         private Integer id;
 
         @ApiModelProperty(value = "工单名称")
+        @NotEmpty(message = "工单名称不能为空")
         private String name;
 
         @ApiModelProperty(value = "顺序")
@@ -49,11 +53,13 @@ public class WorkOrderVO {
         @ApiModelProperty(value = "工单组ID")
         private Integer workOrderGroupId;
 
-        @ApiModelProperty(value = "状态 0 正常 1 开发 2 停用")
+        @ApiModelProperty(value = "状态 0 正常 1 开发 2 停用 3")
         private Integer status;
 
         @ApiModelProperty(value = "说明")
         private String comment;
+
+        private Boolean isActive;
 
         @ApiModelProperty(value = "工作流配置")
         private String workflow;
@@ -71,12 +77,16 @@ public class WorkOrderVO {
     @ApiModel
     public static class Group extends BaseVO {
 
+        @ApiModelProperty(value = "工单数量", example = "1")
+        private Integer workOrderSize;
+
         @ApiModelProperty(value = "组成员工单")
         private List<WorkOrder> workOrders;
 
         private Integer id;
 
         @ApiModelProperty(value = "工单组名称")
+        @NotEmpty(message = "工单组名称不能为空")
         private String name;
 
         @ApiModelProperty(value = "顺序")

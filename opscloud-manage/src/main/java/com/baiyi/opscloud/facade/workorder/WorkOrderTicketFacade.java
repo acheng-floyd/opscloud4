@@ -15,7 +15,15 @@ import java.util.List;
 public interface WorkOrderTicketFacade {
 
     /**
-     * 分页查询
+     * 分页查询 工单
+     *
+     * @param pageQuery
+     * @return
+     */
+    DataTable<WorkOrderTicketVO.Ticket> queryTicketPage(WorkOrderTicketParam.TicketPageQuery pageQuery);
+
+    /**
+     * 分页查询 我的工单
      *
      * @param pageQuery
      * @return
@@ -96,5 +104,7 @@ public interface WorkOrderTicketFacade {
      * @return
      */
     void deleteTicketEntry(Integer ticketEntryId);
+
+    void deleteTicketById(Integer ticketId);
 
 }

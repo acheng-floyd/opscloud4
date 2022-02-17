@@ -19,14 +19,19 @@ import java.io.Serializable;
 public class WorkOrderTicketParam {
 
     @Data
-    @Builder
+    @EqualsAndHashCode(callSuper = true)
+    @ApiModel
+    public static class MyTicketPageQuery extends TicketPageQuery {
+    }
+
+    @Data
     @AllArgsConstructor
     @EqualsAndHashCode(callSuper = true)
     @NoArgsConstructor
     @ApiModel
-    public static class MyTicketPageQuery extends PageParam implements IExtend {
+    public static class TicketPageQuery extends PageParam implements IExtend {
 
-        @ApiModelProperty(value = "用户名(非用户指定)")
+        @ApiModelProperty(value = "用户名")
         private String username;
 
         @ApiModelProperty(value = "工单ID")
@@ -65,7 +70,7 @@ public class WorkOrderTicketParam {
 
         /**
          * 审批动作，取值和说明如下：
-         *
+         * <p>
          * AGREE：同意
          * CANCEL：取消
          * REJECT：拒绝

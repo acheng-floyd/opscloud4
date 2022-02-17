@@ -3,6 +3,7 @@ package com.baiyi.opscloud.packer.business;
 import com.baiyi.opscloud.common.util.BeanCopierUtil;
 import com.baiyi.opscloud.domain.generator.opscloud.UserPermission;
 import com.baiyi.opscloud.domain.vo.business.IBusinessPermissionUser;
+import com.baiyi.opscloud.domain.vo.user.UserPermissionVO;
 import com.baiyi.opscloud.domain.vo.user.UserVO;
 import com.baiyi.opscloud.service.user.UserPermissionService;
 import com.baiyi.opscloud.service.user.UserService;
@@ -38,9 +39,11 @@ public class BusinessPermissionUserPacker {
                 .build();
         List<UserPermission> userPermissions = userPermissionService.queryByBusiness(userPermission);
         iBusinessPermissionUser.setUsers(
-                userPermissions.stream().map(e ->
-                        BeanCopierUtil.copyProperties(userService.getById(e.getUserId()), UserVO.User.class)
-                ).collect(Collectors.toList())
+                userPermissions.stream().map(e -> {
+                    UserVO.User vo = BeanCopierUtil.copyProperties(userService.getById(e.getUserId()), UserVO.User.class);
+                    vo.setUserPermission(BeanCopierUtil.copyProperties(e, UserPermissionVO.UserPermission.class));
+                    return vo;
+                }).collect(Collectors.toList())
         );
     }
 }

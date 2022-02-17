@@ -12,7 +12,7 @@ import com.baiyi.opscloud.service.user.UserService;
 import com.baiyi.opscloud.service.workorder.WorkOrderService;
 import com.baiyi.opscloud.service.workorder.WorkOrderTicketNodeService;
 import com.baiyi.opscloud.service.workorder.WorkOrderTicketService;
-import com.baiyi.opscloud.workorder.constants.OrderPhaseCodeConstants;
+import com.baiyi.opscloud.workorder.constants.OrderTicketPhaseCodeConstants;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
+ * 工单审批助手
  * @Author baiyi
  * @Date 2022/1/19 9:40 AM
  * @Version 1.0
@@ -48,7 +49,7 @@ public class TicketApproverHelper {
         if (workOrderTicket == null) return;
         iApprover.setIsApprover(false); // 设置默认值
         // 不在审批中
-        if (!OrderPhaseCodeConstants.TOAUDIT.name().equals(workOrderTicket.getTicketPhase())) {
+        if (!OrderTicketPhaseCodeConstants.TOAUDIT.name().equals(workOrderTicket.getTicketPhase())) {
             return;
         }
         final String username = SessionUtil.getUsername();
