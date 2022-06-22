@@ -123,7 +123,8 @@ public class UserServiceImpl extends AbstractBusinessService<User> implements Us
 
     @Override
     public void updateLogin(User user) {
-        userMapper.updateByPrimaryKey(user);
+        userMapper.updateByPrimaryKeySelective(user);
+       // userMapper.updateByPrimaryKey(user);
     }
 
     @Override
@@ -157,6 +158,11 @@ public class UserServiceImpl extends AbstractBusinessService<User> implements Us
     }
 
     @Override
+    public void updateMfa(User user) {
+        userMapper.updateByPrimaryKeySelective(user);
+    }
+
+    @Override
     public List<User> listByIsActive(boolean isActive) {
         Example example = new Example(User.class);
         Example.Criteria criteria = example.createCriteria();
@@ -175,6 +181,13 @@ public class UserServiceImpl extends AbstractBusinessService<User> implements Us
     @Override
     public List<User> queryByTagKeys(List<String> tagKeys) {
         return userMapper.queryByTagKeys(tagKeys);
+    }
+
+    @Override
+    public DataTable<User> queryPageByParam(UserParam.EmployeeResignPageQuery pageQuery){
+        Page page = PageHelper.startPage(pageQuery.getPage(), pageQuery.getLength());
+        List<User> data = userMapper.queryEmployeeResignPageByParam(pageQuery);
+        return new DataTable<>(data, page.getTotal());
     }
 
 }

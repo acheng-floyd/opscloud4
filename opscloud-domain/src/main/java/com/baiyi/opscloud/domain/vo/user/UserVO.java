@@ -9,6 +9,7 @@ import com.baiyi.opscloud.domain.vo.base.BaseVO;
 import com.baiyi.opscloud.domain.vo.business.BusinessAssetRelationVO;
 import com.baiyi.opscloud.domain.vo.datasource.DsAssetVO;
 import com.baiyi.opscloud.domain.vo.tag.TagVO;
+import com.baiyi.opscloud.domain.vo.user.mfa.MfaVO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -80,8 +81,11 @@ public class UserVO {
     @AllArgsConstructor
     @NoArgsConstructor
     @ApiModel
-    public static class User extends BaseVO implements BusinessAssetRelationVO.IBusinessAssetRelation, // 资产与业务对象绑定关系
-            TagVO.ITags, IUserPermission {
+    public static class User extends BaseVO implements
+            BusinessAssetRelationVO.IBusinessAssetRelation, // 资产与业务对象绑定关系
+            TagVO.ITags,
+            IUserPermission,
+            AuthRoleVO.IRoles {
 
         private List<TagVO.Tag> tags;
 
@@ -115,11 +119,11 @@ public class UserVO {
 
         @ApiModelProperty(value = "云AM账户Map")
         @Builder.Default
-        private Map<String, List<AMVO.XAM>> amMap = Maps.newHashMap();
+        private Map<String, List<AccessManagementVO.XAccessManagement>> amMap = Maps.newHashMap();
 
         @ApiModelProperty(value = "云AM用户列表（某一类型）")
         @Builder.Default
-        private List<AMVO.XAM> ams = Lists.newArrayList();
+        private List<AccessManagementVO.XAccessManagement> ams = Lists.newArrayList();
 
         // 废弃
         @ApiModelProperty(value = "阿里云RAM用户列表")
@@ -162,9 +166,15 @@ public class UserVO {
         @ApiModelProperty(value = "微信")
         private String wechat;
 
-        @DesensitizedField(type = SensitiveTypeEnum.MOBILE_PHONE)
+        // @DesensitizedField(type = SensitiveTypeEnum.MOBILE_PHONE)
         @ApiModelProperty(value = "手机")
         private String phone;
+
+        @ApiModelProperty(value = "启用MFA")
+        private Boolean mfa;
+
+        @ApiModelProperty(value = "管理员强制启用MFA")
+        private Boolean forceMfa;
 
         @ApiModelProperty(value = "创建者")
         private String createdBy;
@@ -181,6 +191,47 @@ public class UserVO {
         }
 
         private UserPermissionVO.UserPermission userPermission;
+    }
+
+    @Builder
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @ApiModel
+    public static class UserMFA {
+
+        private Integer id;
+
+        private String username;
+
+        @ApiModelProperty(value = "用户是否启用MFA")
+        private Boolean mfa;
+
+        @ApiModelProperty(value = "是否强制用户启用MFA")
+        private Boolean forceMfa;
+
+        @ApiModelProperty(value = "用户MFA配置")
+        private MfaVO.MFA userMfa;
+
+    }
+
+    @Builder
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @ApiModel
+    public static class UserIAMMFA {
+
+        private Integer id;
+
+        private String username;
+
+        @ApiModelProperty(value = "用户是否启用MFA")
+        private Boolean mfa;
+
+        @ApiModelProperty(value = "用户MFA配置")
+        private List<MfaVO.MFA> userMfas;
+
     }
 
 }

@@ -6,8 +6,10 @@ import com.baiyi.opscloud.service.terminal.TerminalSessionInstanceCommandService
 import com.baiyi.opscloud.service.terminal.TerminalSessionInstanceService;
 import com.baiyi.opscloud.sshcore.audit.InstanceCommandBuilder;
 import com.baiyi.opscloud.sshcore.config.TerminalConfigurationProperties;
-import org.apache.commons.lang3.tuple.ImmutablePair;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+
 import javax.annotation.Resource;
 import java.io.FileReader;
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.util.regex.Pattern;
  * @Date 2021/7/28 4:31 下午
  * @Version 1.0
  */
+@Slf4j
 public abstract class AbstractCommandAudit {
 
     @Resource
@@ -46,6 +49,7 @@ public abstract class AbstractCommandAudit {
         String str;
         InstanceCommandBuilder builder = null;
         String regex = getInputRegex();
+
         try {
             LineNumberReader reader = new LineNumberReader(new FileReader(commanderLogPath));
             while ((str = reader.readLine()) != null) {
@@ -55,7 +59,7 @@ public abstract class AbstractCommandAudit {
                         if (builder != null) {
                             // save
                             TerminalSessionInstanceCommand auditCommand = builder.build();
-                            if(auditCommand != null){
+                            if (auditCommand != null) {
                                 if (!StringUtils.isEmpty(auditCommand.getInputFormatted()))
                                     terminalSessionInstanceCommandService.add(auditCommand);
                                 builder = null;
@@ -69,10 +73,9 @@ public abstract class AbstractCommandAudit {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("审计文件不存在: {}", commanderLogPath);
         }
     }
-
 
     private ImmutablePair<Integer, Integer> getIndex(String inputStr) {
         int index1 = inputStr.indexOf("$");
@@ -98,20 +101,27 @@ public abstract class AbstractCommandAudit {
     public void formatInput(TerminalSessionInstanceCommand command) {
         String input = command.getInput();
         while (input.contains("\b")) {
-            String ni = input.replaceFirst(getBsRegex(), ""); // 退格处理
-            if (ni.equals(input)) { // 避免死循环
+            // 退格处理
+            String ni = input.replaceFirst(getBsRegex(), "");
+            // 避免死循环
+            if (ni.equals(input)) {
                 ni = input.replaceFirst(".?\b", "");
             }
             input = ni;
         }
-        // 删除所有不可见字符（但不包含退格）
         String inputFormatted = eraseInvisibleCharacters(input);
         command.setInputFormatted(inputFormatted);
         command.setIsFormatted(true);
     }
 
-
-    protected String eraseInvisibleCharacters(String input){
-       return input.replaceAll("\\p{C}", "");
+    /**
+     * 删除所有不可见字符（但不包含退格）
+     *
+     * @param input
+     * @return
+     */
+    protected String eraseInvisibleCharacters(String input) {
+        return input.replaceAll("\\p{C}", "");
     }
+
 }

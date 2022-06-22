@@ -3,6 +3,7 @@ package com.baiyi.opscloud.domain.vo.server;
 import com.baiyi.opscloud.domain.constants.BusinessTypeEnum;
 import com.baiyi.opscloud.domain.vo.base.BaseVO;
 import com.baiyi.opscloud.domain.vo.business.BusinessAssetRelationVO;
+import com.baiyi.opscloud.domain.vo.business.BusinessDocumentVO;
 import com.baiyi.opscloud.domain.vo.business.BusinessPropertyVO;
 import com.baiyi.opscloud.domain.vo.env.EnvVO;
 import com.baiyi.opscloud.domain.vo.tag.TagVO;
@@ -10,6 +11,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.List;
@@ -38,6 +40,7 @@ public class ServerVO {
             ServerAccountVO.IAccount,
             BusinessAssetRelationVO.IBusinessAssetRelation, // 资产与业务对象绑定关系
             BusinessPropertyVO.IBusinessProperty,
+            BusinessDocumentVO.IBusinessDocument,
             Serializable {
 
         @Override
@@ -46,6 +49,8 @@ public class ServerVO {
         }
 
         private static final long serialVersionUID = -1011261913967456450L;
+
+        private BusinessDocumentVO.Document document;
 
         private List<TagVO.Tag> tags;
 
@@ -74,7 +79,7 @@ public class ServerVO {
         private Integer id = 0;
 
         @ApiModelProperty(value = "服务器名称")
-        @NotNull(message = "服务器名称不能为空")
+        @NotBlank(message = "服务器名称不能为空")
         private String name;
 
         @ApiModelProperty(value = "显示名称")

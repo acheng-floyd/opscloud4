@@ -11,6 +11,7 @@ public enum ErrorEnum {
     AUTH_ROLE_HAS_USED(11001, "用户角色正在使用！"),
     AUTH_RESOURCE_HAS_USED(11003, "资源正在使用！"),
     AUTH_USER_LOGIN_FAILURE(20001, "登录失败请检查用户名或用户未激活，请重试！"),
+    AUTH_USER_LOGIN_OTP_FAILURE(20001, "登录失败OTP密码错误，请重试！"),
     AUTH_THERE_ARE_NO_AUTHENTICATED_INSTANCES_FAILURE(20001, "没有可认证的实例！"),
 
     // ----------------------- DATASOURCE -----------------------
@@ -196,6 +197,8 @@ public enum ErrorEnum {
     WORKORDER_TICKET_PHASE_ERROR(70001, "工单阶段不正确"),
     WORKORDER_TICKET_NOT_THE_CURRENT_APPROVER(70001, "不是当前审批人"),
     WORKORDER_TICKET_ENTRIES_EXISTS(70001, "工单条目未填写"),
+    WORKORDER_INVALID_TOKEN(70001,"Work order approval failed: invalid token!"),
+
 
     KEYBOX_PUBLIC_KEY_IS_EMPTY(60001, "公钥不能为空！"),
     KEYBOX_PRIVATE_KEY_IS_EMPTY(60001, "私钥不能为空！"),
@@ -259,8 +262,8 @@ public enum ErrorEnum {
     ROLE_MENU_SAVE_FAIL(999, "保存角色菜单失败"),
     ;
 
-    private int code;
-    private String message;
+    private final int code;
+    private final String message;
 
     ErrorEnum(int code, String message) {
         this.code = code;

@@ -7,13 +7,13 @@ import com.baiyi.opscloud.core.factory.AssetProviderFactory;
 import com.baiyi.opscloud.core.model.DsInstanceContext;
 import com.baiyi.opscloud.core.provider.asset.BaseAssetProvider;
 import com.baiyi.opscloud.core.util.AssetUtil;
-import com.baiyi.opscloud.datasource.aliyun.dms.drive.AliyunDmsTenantDrive;
-import com.baiyi.opscloud.datasource.aliyun.dms.drive.AliyunDmsUserDrive;
+import com.baiyi.opscloud.datasource.aliyun.dms.driver.AliyunDmsTenantDriver;
+import com.baiyi.opscloud.datasource.aliyun.dms.driver.AliyunDmsUserDriver;
 import com.baiyi.opscloud.datasource.aliyun.dms.entity.DmsUser;
 import com.baiyi.opscloud.datasource.aliyun.provider.push.AliyunDmsUserPushHelper;
+import com.baiyi.opscloud.domain.constants.DsAssetTypeConstants;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceConfig;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstanceAsset;
-import com.baiyi.opscloud.domain.constants.DsAssetTypeConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -61,12 +61,12 @@ public class AliyunDmsUserProvider extends BaseAssetProvider<DmsUser.User> {
             Long tid = Optional.of(aliyun)
                     .map(AliyunConfig.Aliyun::getDms)
                     .map(AliyunConfig.Dms::getTid)
-                    .orElse(AliyunDmsTenantDrive.getTenant(aliyun).getTid());
-            users.forEach(r -> {
+                    .orElse(AliyunDmsTenantDriver.getTenant(aliyun).getTid());
+            users.forEach(dmsUser -> {
                 try {
-                    AliyunDmsUserDrive.registerUser(aliyun, tid, r);
+                    AliyunDmsUserDriver.registerUser(aliyun, tid, dmsUser);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("注册用户错误: nickName = {} , e = {}", dmsUser.nickName, e.getMessage());
                 }
             });
             this.doPull(dsInstanceId);
@@ -93,9 +93,10 @@ public class AliyunDmsUserProvider extends BaseAssetProvider<DmsUser.User> {
             Long tid = Optional.of(aliyun)
                     .map(AliyunConfig.Aliyun::getDms)
                     .map(AliyunConfig.Dms::getTid)
-                    .orElse(AliyunDmsTenantDrive.getTenant(aliyun).getTid());
-            return AliyunDmsUserDrive.listUser(aliyun, tid);
+                    .orElse(AliyunDmsTenantDriver.getTenant(aliyun).getTid());
+            return AliyunDmsUserDriver.listUser(aliyun, tid);
         } catch (Exception e) {
+            log.error("获取条目错误: e = {}", e.getMessage());
         }
         return Collections.emptyList();
     }

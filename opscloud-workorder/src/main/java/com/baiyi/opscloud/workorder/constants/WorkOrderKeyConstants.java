@@ -11,12 +11,18 @@ public enum WorkOrderKeyConstants {
     IAM_POLICY,
     ONS_ROCKETMQ_TOPIC,
     ONS_ROCKETMQ_GROUP,
+    SQS,
+    SNS_TOPIC,
+    SNS_SUBSCRIPTION,
 
     SERVER_GROUP,
     APPLICATION_PERMISSION,
     // UserGroup
     VPN,
     NEXUS,
+    GRAFANA,
     CONFLUENCE,
-    NACOS
+    NACOS,
+
+    SYS_EMPLOYEE_RESIGN
 }

@@ -1,15 +1,15 @@
 package com.baiyi.opscloud.controller.ws;
 
-import com.baiyi.opscloud.datasource.ansible.play.ITaskPlayProcess;
-import com.baiyi.opscloud.datasource.ansible.play.ServerTaskPlayFactory;
 import com.baiyi.opscloud.common.util.TimeUtil;
 import com.baiyi.opscloud.controller.ws.base.SimpleAuthentication;
+import com.baiyi.opscloud.datasource.ansible.play.ITaskPlayProcessor;
+import com.baiyi.opscloud.datasource.ansible.play.ServerTaskPlayFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
+
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,7 +38,7 @@ public class ServerTaskPlayController extends SimpleAuthentication {
     public void onOpen(Session session) {
         sessionSet.add(session);
         int cnt = onlineCount.incrementAndGet(); // 在线数加1
-        log.info("剧本任务日志有连接加入，当前连接数为：{}", cnt);
+        log.info("剧本任务日志有连接加入: 当前连接数为：{}", cnt);
         session.setMaxIdleTimeout(WEBSOCKET_TIMEOUT);
         this.session = session;
     }
@@ -49,8 +49,6 @@ public class ServerTaskPlayController extends SimpleAuthentication {
     @OnClose
     public void onClose() {
         sessionSet.remove(session);
-        int cnt = onlineCount.decrementAndGet();
-        log.info("有连接关闭，当前连接数为：{}", cnt);
     }
 
     /**
@@ -63,7 +61,7 @@ public class ServerTaskPlayController extends SimpleAuthentication {
     public void onMessage(String message, Session session) {
         if (!session.isOpen() || StringUtils.isEmpty(message)) return;
         String state = getState(message);
-        ITaskPlayProcess iTaskPlayProcess = ServerTaskPlayFactory.getProcessByKey(state);
+        ITaskPlayProcessor iTaskPlayProcess = ServerTaskPlayFactory.getProcessByKey(state);
         if (iTaskPlayProcess != null) iTaskPlayProcess.process(message, session);
     }
 
@@ -76,21 +74,6 @@ public class ServerTaskPlayController extends SimpleAuthentication {
     @OnError
     public void onError(Session session, Throwable error) {
         log.error("发生错误：{}，Session ID： {}", error.getMessage(), session.getId());
-    }
-
-    /**
-     * 发送消息，实践表明，每次浏览器刷新，session会发生变化。
-     *
-     * @param session
-     * @param message
-     */
-    public static void sendMessage(Session session, String message) {
-        try {
-            session.getBasicRemote().sendText(message);
-        } catch (IOException e) {
-            log.error("发送消息出错：{}", e.getMessage());
-            e.printStackTrace();
-        }
     }
 
 }

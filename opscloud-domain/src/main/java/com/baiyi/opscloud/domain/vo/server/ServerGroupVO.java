@@ -4,6 +4,7 @@ import com.baiyi.opscloud.domain.base.IAllowOrder;
 import com.baiyi.opscloud.domain.constants.BusinessTypeEnum;
 import com.baiyi.opscloud.domain.vo.base.BaseVO;
 import com.baiyi.opscloud.domain.vo.business.BusinessAssetRelationVO;
+import com.baiyi.opscloud.domain.vo.business.BusinessDocumentVO;
 import com.baiyi.opscloud.domain.vo.business.BusinessPropertyVO;
 import com.baiyi.opscloud.domain.vo.tag.TagVO;
 import com.baiyi.opscloud.domain.vo.user.UserPermissionVO;
@@ -12,6 +13,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.List;
@@ -41,10 +43,14 @@ public class ServerGroupVO {
             IAllowOrder,
             BusinessPropertyVO.IBusinessProperty,
             BusinessAssetRelationVO.IBusinessAssetRelation, // 资产与业务对象绑定关系
+            BusinessDocumentVO.IBusinessDocument,
             Serializable {
 
         private static final long serialVersionUID = 5059407999240740609L;
+
         private final Integer businessType = BusinessTypeEnum.SERVERGROUP.getType();
+
+        private BusinessDocumentVO.Document document;
 
         @Override
         public String getBusinessUniqueKey() {
@@ -74,7 +80,7 @@ public class ServerGroupVO {
         private Integer id;
 
         @ApiModelProperty(value = "组名称")
-        @NotNull(message = "组名称不能为空")
+        @NotBlank(message = "组名称不能为空")
         private String name;
 
         @ApiModelProperty(value = "组类型", example = "1")

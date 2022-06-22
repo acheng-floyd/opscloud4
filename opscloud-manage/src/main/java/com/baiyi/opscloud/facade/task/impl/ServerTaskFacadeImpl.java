@@ -4,12 +4,13 @@ import com.baiyi.opscloud.common.base.ServerTaskStatusEnum;
 import com.baiyi.opscloud.common.datasource.AnsibleConfig;
 import com.baiyi.opscloud.common.exception.common.CommonRuntimeException;
 import com.baiyi.opscloud.common.template.YamlUtil;
+import com.baiyi.opscloud.common.util.BeanCopierUtil;
 import com.baiyi.opscloud.core.factory.DsConfigHelper;
 import com.baiyi.opscloud.core.model.DsInstanceContext;
 import com.baiyi.opscloud.core.provider.base.common.SimpleDsInstanceProvider;
 import com.baiyi.opscloud.core.util.SystemEnvUtil;
-import com.baiyi.opscloud.datasource.ansible.args.AnsibleArgs;
-import com.baiyi.opscloud.datasource.ansible.builder.AnsiblePlaybookArgsBuilder;
+import com.baiyi.opscloud.datasource.ansible.builder.args.AnsibleArgs;
+import com.baiyi.opscloud.datasource.ansible.builder.AnsiblePlaybookArgumentsBuilder;
 import com.baiyi.opscloud.datasource.ansible.recorder.TaskLogStorehouse;
 import com.baiyi.opscloud.datasource.ansible.task.AnsibleServerTask;
 import com.baiyi.opscloud.domain.DataTable;
@@ -77,8 +78,9 @@ public class ServerTaskFacadeImpl extends SimpleDsInstanceProvider implements Se
     @Override
     public DataTable<ServerTaskVO.ServerTask> queryServerTaskPage(ServerTaskParam.ServerTaskPageQuery pageQuery) {
         DataTable<ServerTask> table = serverTaskService.queryServerTaskPage(pageQuery);
-        return new DataTable<>(table.getData().stream().map(e ->
-                serverTaskPacker.wrapToVO(e, pageQuery)).collect(Collectors.toList())
+        List<ServerTaskVO.ServerTask> data = BeanCopierUtil.copyListProperties(table.getData(), ServerTaskVO.ServerTask.class).stream()
+                .peek(e -> serverTaskPacker.wrap(e, pageQuery)).collect(Collectors.toList());
+        return new DataTable<>(data
                 , table.getTotalNum());
     }
 
@@ -133,7 +135,7 @@ public class ServerTaskFacadeImpl extends SimpleDsInstanceProvider implements Se
                 ServerTaskMember serverTaskMember = iter.next();
                 iter.remove();
                 args.setHosts(serverTaskMember.getManageIp());
-                CommandLine commandLine = AnsiblePlaybookArgsBuilder.build(ansible, args);
+                CommandLine commandLine = AnsiblePlaybookArgumentsBuilder.build(ansible, args);
                 AnsibleServerTask ansibleServerTask = new AnsibleServerTask(serverTask.getTaskUuid(),
                         serverTaskMember,
                         commandLine,
@@ -148,6 +150,7 @@ public class ServerTaskFacadeImpl extends SimpleDsInstanceProvider implements Se
                 }
             }
         }
+        fixedThreadPool.shutdown();
         traceEndOfTask(serverTask);
     }
 

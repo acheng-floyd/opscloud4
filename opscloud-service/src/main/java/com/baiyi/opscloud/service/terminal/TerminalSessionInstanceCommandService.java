@@ -18,4 +18,12 @@ public interface TerminalSessionInstanceCommandService {
     List<TerminalSessionInstanceCommand> queryByInstanceId(Integer terminalSessionInstanceId);
 
     DataTable<TerminalSessionInstanceCommand> queryTerminalSessionInstanceCommandPage(TerminalSessionInstanceCommandParam.InstanceCommandPageQuery pageQuery);
+
+    /**
+     * 统计会话实例命令数量
+     * @param terminalSessionInstanceId
+     * @return
+     */
+    int countByTerminalSessionInstanceId(Integer terminalSessionInstanceId);
+
 }

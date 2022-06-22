@@ -8,9 +8,8 @@ import com.baiyi.opscloud.domain.generator.opscloud.ServerGroup;
 import com.baiyi.opscloud.domain.param.SimpleExtend;
 import com.baiyi.opscloud.domain.vo.server.ServerTreeVO;
 import com.baiyi.opscloud.domain.vo.server.ServerVO;
-import com.baiyi.opscloud.facade.server.SimpleServerNameFacade;
 import com.baiyi.opscloud.packer.server.ServerPacker;
-import com.baiyi.opscloud.service.business.BusinessPropertyHelper;
+import com.baiyi.opscloud.service.business.BizPropertyHelper;
 import com.google.common.base.Joiner;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -58,14 +57,14 @@ public class ServerTreeUtil {
     }
 
     private ServerTreeVO.Tree apply(ServerPack serverPack) {
-        String serverName = SimpleServerNameFacade.toName(serverPack.getServer(), serverPack.getEnv());
+        String serverName = serverPack.getServer().getDisplayName();
         ServerVO.Server vo = BeanCopierUtil.copyProperties(serverPack.getServer(), ServerVO.Server.class);
         serverPacker.wrap(vo, SimpleExtend.EXTEND);
         return ServerTreeVO.Tree.builder()
                 .id(serverName)
                 .disabled(isDisabled(serverPack.getServer()))
                 .server(vo)
-                .label(Joiner.on(":").join(serverName, BusinessPropertyHelper.getManageIp(serverPack)))
+                .label(Joiner.on(":").join(serverName, BizPropertyHelper.getManageIp(serverPack)))
                 .build();
     }
 
@@ -76,7 +75,7 @@ public class ServerTreeUtil {
 
     public void wrap(Map<String, String> serverTreeHostPatternMap, Map<String, List<Server>> serverGroupMap) {
         serverGroupMap.forEach((k, v) ->
-                v.forEach(s -> serverTreeHostPatternMap.put(SimpleServerNameFacade.toServerName(s), s.getPrivateIp()))
+                v.forEach(s -> serverTreeHostPatternMap.put(s.getDisplayName(), s.getPrivateIp()))
         );
     }
 

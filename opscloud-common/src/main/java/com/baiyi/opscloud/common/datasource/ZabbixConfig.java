@@ -30,6 +30,9 @@ public class ZabbixConfig extends BaseConfig {
         private String zone;
         private Operation operation;
         private List<String> severityTypes;
+        // IP段范围
+        private List<String> regions;
+        private Notice notice;
     }
 
     @Data
@@ -38,6 +41,15 @@ public class ZabbixConfig extends BaseConfig {
     public static class Operation {
         private String subject;
         private String message;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @ApiModel
+    public static class Notice {
+        private String media;
+        private Integer priority;
+        private String token;
     }
 
 }

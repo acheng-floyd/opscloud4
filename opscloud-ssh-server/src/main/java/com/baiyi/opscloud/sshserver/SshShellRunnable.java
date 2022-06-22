@@ -60,8 +60,7 @@ import static com.baiyi.opscloud.sshserver.auth.SshShellAuthenticationProvider.A
  * Runnable for ssh shell session
  */
 @Slf4j
-public class SshShellRunnable
-        implements Factory<Command>, ChannelSessionAware, Runnable {
+public class SshShellRunnable implements Factory<Command>, ChannelSessionAware, Runnable {
 
     private static final String SSH_ENV_COLUMNS = "COLUMNS";
 
@@ -283,4 +282,5 @@ public class SshShellRunnable
             }
         }
     }
+
 }

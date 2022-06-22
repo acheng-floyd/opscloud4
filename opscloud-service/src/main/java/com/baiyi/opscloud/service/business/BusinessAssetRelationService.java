@@ -28,7 +28,9 @@ public interface BusinessAssetRelationService {
 
     void add(BusinessAssetRelation businessAssetRelation);
 
-    void deleteById(Integer id);
+    //  void deleteById(Integer id);
+
+    void delete(BusinessAssetRelation businessAssetRelation);
 
     /**
      * 查询资产的绑定列表
@@ -58,5 +60,6 @@ public interface BusinessAssetRelationService {
 
     List<BusinessAssetRelation> queryBusinessRelations(BaseBusiness.IBusiness iBusiness, String assetType);
 
+    BusinessAssetRelation getById(Integer id);
 
 }

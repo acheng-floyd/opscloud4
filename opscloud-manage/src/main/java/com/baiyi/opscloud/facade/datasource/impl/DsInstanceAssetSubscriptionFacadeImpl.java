@@ -9,8 +9,8 @@ import com.baiyi.opscloud.core.factory.DsConfigHelper;
 import com.baiyi.opscloud.core.model.DsInstanceContext;
 import com.baiyi.opscloud.core.provider.base.common.SimpleDsInstanceProvider;
 import com.baiyi.opscloud.core.util.SystemEnvUtil;
-import com.baiyi.opscloud.datasource.ansible.args.AnsibleArgs;
-import com.baiyi.opscloud.datasource.ansible.builder.AnsiblePlaybookArgsBuilder;
+import com.baiyi.opscloud.datasource.ansible.builder.args.AnsibleArgs;
+import com.baiyi.opscloud.datasource.ansible.builder.AnsiblePlaybookArgumentsBuilder;
 import com.baiyi.opscloud.datasource.ansible.entity.AnsibleExecuteResult;
 import com.baiyi.opscloud.datasource.ansible.executor.AnsibleExecutor;
 import com.baiyi.opscloud.domain.DataTable;
@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -52,9 +53,11 @@ public class DsInstanceAssetSubscriptionFacadeImpl extends SimpleDsInstanceProvi
     @Override
     public DataTable<DsAssetSubscriptionVO.AssetSubscription> queryAssetSubscriptionPage(DsAssetSubscriptionParam.AssetSubscriptionPageQuery pageQuery) {
         DataTable<DatasourceInstanceAssetSubscription> table = dsInstanceAssetSubscriptionService.queryPageByParam(pageQuery);
-        return new DataTable<>(
-                table.getData().stream().map(e -> dsAssetSubscriptionPacker.wrapToVO(e, pageQuery)).collect(Collectors.toList()),
-                table.getTotalNum());
+
+        List<DsAssetSubscriptionVO.AssetSubscription> data = BeanCopierUtil.copyListProperties(table.getData(), DsAssetSubscriptionVO.AssetSubscription.class)
+                .stream().peek(e->dsAssetSubscriptionPacker.wrap(e,pageQuery)).collect(Collectors.toList());
+
+        return new DataTable<>(data, table.getTotalNum());
     }
 
     @Override
@@ -89,7 +92,7 @@ public class DsInstanceAssetSubscriptionFacadeImpl extends SimpleDsInstanceProvi
                 .playbook(toSubscriptionPlaybookFile(ansible, datasourceInstanceAssetSubscription))
                 .inventory(SystemEnvUtil.renderEnvHome(ansible.getInventoryHost()))
                 .build();
-        CommandLine commandLine = AnsiblePlaybookArgsBuilder.build(ansible, args);
+        CommandLine commandLine = AnsiblePlaybookArgumentsBuilder.build(ansible, args);
         AnsibleExecuteResult er = AnsibleExecutor.execute(commandLine, TimeUtil.minuteTime * 2);
         try {
             datasourceInstanceAssetSubscription.setLastSubscriptionLog(er.getOutput().toString("utf8"));

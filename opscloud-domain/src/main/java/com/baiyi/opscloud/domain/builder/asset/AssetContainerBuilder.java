@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class AssetContainerBuilder {
 
-    private AssetContainer assetContainer = AssetContainer.builder().build();
+    private final AssetContainer assetContainer = AssetContainer.builder().build();
 
     private AssetContainerBuilder() {
     }
@@ -45,4 +45,5 @@ public class AssetContainerBuilder {
     public AssetContainer build() {
         return assetContainer;
     }
+
 }

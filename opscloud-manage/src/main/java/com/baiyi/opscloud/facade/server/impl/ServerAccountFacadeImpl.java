@@ -1,5 +1,6 @@
 package com.baiyi.opscloud.facade.server.impl;
 
+import com.baiyi.opscloud.common.exception.common.CommonRuntimeException;
 import com.baiyi.opscloud.common.util.BeanCopierUtil;
 import com.baiyi.opscloud.domain.DataTable;
 import com.baiyi.opscloud.domain.generator.opscloud.Credential;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author baiyi
@@ -39,13 +41,19 @@ public class ServerAccountFacadeImpl implements ServerAccountFacade {
     @Override
     public DataTable<ServerAccountVO.Account> queryServerAccountPage(ServerAccountParam.ServerAccountPageQuery pageQuery) {
         DataTable<ServerAccount> table = accountService.queryPageByParam(pageQuery);
-        return new DataTable<>(accountPacker.wrapVOList(table.getData(), pageQuery), table.getTotalNum());
+        List<ServerAccountVO.Account> data = BeanCopierUtil.copyListProperties(table.getData(), ServerAccountVO.Account.class).stream()
+                .peek(e -> accountPacker.wrap(e, pageQuery)).collect(Collectors.toList());
+        return new DataTable<>(data, table.getTotalNum());
     }
 
     @Override
     public void addServerAccount(ServerAccountVO.Account account) {
         ServerAccount serverAccount = toServerAccount(account);
-        accountService.add(serverAccount);
+        try {
+            accountService.add(serverAccount);
+        } catch (Exception e) {
+            throw new CommonRuntimeException("新增账户错误: 请确认账户名称和类型是否重复！");
+        }
     }
 
     @Override
@@ -66,20 +74,19 @@ public class ServerAccountFacadeImpl implements ServerAccountFacade {
     @Override
     public void updateServerAccountPermission(ServerAccountParam.UpdateServerAccountPermission updatePermission) {
         List<ServerAccountPermission> permissions = accountPermissionService.queryByServerId(updatePermission.getServerId());
-        updatePermission.getAccountIds().forEach(id->{
-          if(!isAuthorized(permissions,id)){
-              ServerAccountPermission permission = ServerAccountPermission.builder()
-                      .serverAccountId(id)
-                      .serverId(updatePermission.getServerId())
-                      .build();
-              accountPermissionService.add(permission);
-          }
-
+        updatePermission.getAccountIds().forEach(id -> {
+            if (!isAuthorized(permissions, id)) {
+                ServerAccountPermission permission = ServerAccountPermission.builder()
+                        .serverAccountId(id)
+                        .serverId(updatePermission.getServerId())
+                        .build();
+                accountPermissionService.add(permission);
+            }
         });
-        permissions.forEach(e-> accountPermissionService.deleteById(e.getId()) );
+        permissions.forEach(e -> accountPermissionService.deleteById(e.getId()));
     }
 
-    private boolean isAuthorized(List<ServerAccountPermission> permissions,Integer accountId){
+    private boolean isAuthorized(List<ServerAccountPermission> permissions, Integer accountId) {
         Iterator<ServerAccountPermission> iter = permissions.iterator();
         while (iter.hasNext()) {
             ServerAccountPermission permission = iter.next();
@@ -89,6 +96,14 @@ public class ServerAccountFacadeImpl implements ServerAccountFacade {
             }
         }
         return false;
+    }
+
+    @Override
+    public void deleteServerAccountById(Integer id) {
+        if (accountPermissionService.countByServerAccountId(id) != 0) {
+            throw new CommonRuntimeException("服务器账户删除错误: 账户使用中！");
+        }
+        accountService.deleteById(id);
     }
 
 }

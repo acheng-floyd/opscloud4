@@ -88,15 +88,17 @@ public class DsInstanceAssetServiceImpl implements DsInstanceAssetService {
         Example.Criteria criteria = example.createCriteria();
         criteria.andEqualTo("instanceUuid", pageQuery.getInstanceUuid())
                 .andEqualTo("assetType", pageQuery.getAssetType());
-        if (pageQuery.getIsActive() != null) {
+        if (pageQuery.getIsActive() != null)
             criteria.andEqualTo("isActive", pageQuery.getIsActive());
-        }
+        if (StringUtils.isNotBlank(pageQuery.getRegionId()))
+            criteria.andEqualTo("regionId", pageQuery.getRegionId());
+        if (StringUtils.isNotBlank(pageQuery.getKind()))
+            criteria.andEqualTo("kind", pageQuery.getKind());
         if (StringUtils.isNotBlank(pageQuery.getQueryName())) {
             Example.Criteria criteria2 = example.createCriteria();
             String likeName = SQLUtil.toLike(pageQuery.getQueryName());
             criteria2.orLike("assetId", likeName)
                     .orLike("name", likeName)
-                    .orLike("kind", likeName)
                     .orLike("assetKey", likeName)
                     .orLike("assetKey2", likeName)
                     .orLike("description", likeName);
@@ -132,6 +134,22 @@ public class DsInstanceAssetServiceImpl implements DsInstanceAssetService {
             criteria.andLike("assetKey", SQLUtil.toLike(asset.getAssetKey()));
         if (!StringUtils.isEmpty(asset.getAssetKey2()))
             criteria.andEqualTo("assetKey2", asset.getAssetKey2());
+        if (!StringUtils.isEmpty(asset.getRegionId()))
+            criteria.andEqualTo("regionId", asset.getRegionId());
+        example.setOrderByClause("create_time");
+        return dsInstanceAssetMapper.selectByExample(example);
+    }
+
+    @Override
+    public List<DatasourceInstanceAsset> acqAssetByAssetParam(DatasourceInstanceAsset asset) {
+        Example example = new Example(DatasourceInstanceAsset.class);
+        Example.Criteria criteria = example.createCriteria();
+        if (!StringUtils.isEmpty(asset.getAssetType()))
+            criteria.andEqualTo("assetType", asset.getAssetType());
+        if (asset.getIsActive() != null)
+            criteria.andEqualTo("isActive", asset.getIsActive());
+        if (!StringUtils.isEmpty(asset.getAssetKey()))
+            criteria.andLike("assetKey", asset.getAssetKey());
         example.setOrderByClause("create_time");
         return dsInstanceAssetMapper.selectByExample(example);
     }

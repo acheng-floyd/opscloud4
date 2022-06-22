@@ -32,6 +32,10 @@ public enum DsAssetTypeConstants {
     IAM_POLICY,
     IAM_USER,
     IAM_ACCESS_KEY,
+    SQS,
+    SNS_TOPIC,
+    SNS_SUBSCRIPTION,
+    AMAZON_DOMAIN,
 
     GITLAB_USER,
     GITLAB_GROUP,
@@ -42,6 +46,7 @@ public enum DsAssetTypeConstants {
     V_SWITCH,
     ECS_IMAGE,
     ECS_SG,
+    ALIYUN_DOMAIN,
 
     KUBERNETES_NAMESPACE,
     KUBERNETES_NODE,

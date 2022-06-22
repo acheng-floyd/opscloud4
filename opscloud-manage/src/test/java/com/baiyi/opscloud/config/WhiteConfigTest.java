@@ -17,7 +17,7 @@ class WhiteConfigTest extends BaseUnit {
     private WhiteConfigurationProperties whiteConfig;
 
     @Test
-    void whiteConfigTest(){
+    void whiteConfigTest() {
         print(whiteConfig);
     }
 

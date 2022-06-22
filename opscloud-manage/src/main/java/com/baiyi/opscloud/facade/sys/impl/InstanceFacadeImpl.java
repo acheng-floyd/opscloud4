@@ -1,6 +1,7 @@
 package com.baiyi.opscloud.facade.sys.impl;
 
 import com.baiyi.opscloud.common.exception.common.CommonRuntimeException;
+import com.baiyi.opscloud.common.util.BeanCopierUtil;
 import com.baiyi.opscloud.common.util.HostUtil;
 import com.baiyi.opscloud.domain.DataTable;
 import com.baiyi.opscloud.domain.generator.opscloud.Instance;
@@ -39,6 +40,8 @@ public class InstanceFacadeImpl implements InstanceFacade, InitializingBean {
 
     private final RegisteredInstancePacker registeredInstancePacker;
 
+    private static final InetAddress inetAddress = getInetAddress();
+
     public interface HealthStatus {
         String OK = "OK";
         String ERROR = "ERROR";
@@ -48,8 +51,10 @@ public class InstanceFacadeImpl implements InstanceFacade, InitializingBean {
     @Override
     public DataTable<InstanceVO.RegisteredInstance> queryRegisteredInstancePage(RegisteredInstanceParam.RegisteredInstancePageQuery pageQuery) {
         DataTable<Instance> table = instanceService.queryRegisteredInstancePage(pageQuery);
+        List<InstanceVO.RegisteredInstance> data = BeanCopierUtil.copyListProperties(table.getData(), InstanceVO.RegisteredInstance.class).stream()
+                .peek(e -> registeredInstancePacker.wrap(e, pageQuery)).collect(Collectors.toList());
         return new DataTable<>(
-                table.getData().stream().map(e -> registeredInstancePacker.wrapToVO(e, pageQuery)).collect(Collectors.toList()),
+                data,
                 table.getTotalNum());
     }
 
@@ -74,20 +79,25 @@ public class InstanceFacadeImpl implements InstanceFacade, InitializingBean {
         return HealthStatus.OK.equals(health.getStatus());
     }
 
+    private static InetAddress getInetAddress() {
+        try {
+            return HostUtil.getInetAddress();
+        } catch (UnknownHostException ignored) {
+            return null;
+        }
+    }
+
     @Override
     public InstanceVO.Health checkHealth() {
-        try {
-            InetAddress inetAddress = HostUtil.getInetAddress();
-            Instance instance = instanceService.getByHostIp(inetAddress.getHostAddress());
-            if (instance == null)
-                return buildHealth(HealthStatus.ERROR);
-            if (instance.getIsActive()) {
-                return buildHealth(HealthStatus.OK);
-            } else {
-                return buildHealth(HealthStatus.INACTIVE);
-            }
-        } catch (UnknownHostException ignored) {
+        if (InstanceFacadeImpl.inetAddress == null)
             return buildHealth(HealthStatus.ERROR);
+        Instance instance = instanceService.getByHostIp(InstanceFacadeImpl.inetAddress.getHostAddress());
+        if (instance == null)
+            return buildHealth(HealthStatus.ERROR);
+        if (instance.getIsActive()) {
+            return buildHealth(HealthStatus.OK);
+        } else {
+            return buildHealth(HealthStatus.INACTIVE);
         }
     }
 

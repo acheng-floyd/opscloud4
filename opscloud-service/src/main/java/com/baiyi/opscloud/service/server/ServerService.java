@@ -15,24 +15,33 @@ public interface ServerService {
 
     Server getById(Integer id);
 
+    List<Server> selectAll();
+
+    Server getByUniqueKey(Integer envType, Integer serialNumber, Integer serverGroupId);
+
     Server getByPrivateIp(String privateIp);
 
     /**
      * 创建并触发事件
+     *
      * @param server
      */
     void add(Server server);
 
     /**
      * 更新并触发事件
+     *
      * @param server
      */
     void update(Server server);
 
-    void delete(Integer id);
+    void updateNotEvent(Server server);
+
+    void deleteById(Integer id);
 
     /**
      * 删除并触发事件
+     *
      * @param server
      */
     void delete(Server server);

@@ -2,7 +2,6 @@ package com.baiyi.opscloud.domain.generator.opscloud;
 
 import com.baiyi.opscloud.domain.annotation.Decrypt;
 import com.baiyi.opscloud.domain.annotation.Encrypt;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -59,8 +58,8 @@ public class User {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    //@JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "last_login")
-    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastLogin;
 
     private String wechat;
@@ -69,6 +68,17 @@ public class User {
      * 手机
      */
     private String phone;
+
+    /**
+     * 启用MFA
+     */
+    private Boolean mfa;
+
+    /**
+     * 强制启用MFA
+     */
+    @Column(name = "force_mfa")
+    private Boolean forceMfa;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -81,14 +91,12 @@ public class User {
     /**
      * 创建时间
      */
-    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "create_time", insertable = false, updatable = false)
     private Date createTime;
 
     /**
      * 更新时间
      */
-    @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "update_time", insertable = false, updatable = false)
     private Date updateTime;
 

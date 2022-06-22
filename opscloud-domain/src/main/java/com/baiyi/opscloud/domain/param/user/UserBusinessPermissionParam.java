@@ -1,11 +1,11 @@
 package com.baiyi.opscloud.domain.param.user;
 
-import com.baiyi.opscloud.domain.constants.DsInstanceTagConstants;
+import com.baiyi.opscloud.domain.constants.BusinessTypeEnum;
+import com.baiyi.opscloud.domain.constants.TagConstants;
 import com.baiyi.opscloud.domain.param.IExtend;
 import com.baiyi.opscloud.domain.param.IFilterTag;
 import com.baiyi.opscloud.domain.param.PageParam;
 import com.baiyi.opscloud.domain.param.SuperPageParam;
-import com.baiyi.opscloud.domain.constants.BusinessTypeEnum;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
@@ -30,6 +30,9 @@ public class UserBusinessPermissionParam {
 
         @ApiModelProperty(value = "查询名称")
         private String queryName;
+
+        @ApiModelProperty(value = "应用ID")
+        private Integer applicationId;
 
         @ApiModelProperty(value = "用户id")
 //        @NotNull(message = "用户id不能为空")
@@ -76,13 +79,12 @@ public class UserBusinessPermissionParam {
         @NotNull(message = "业务对象ID不能为空")
         private int businessId;
 
-        private final String FILTER_SYSTEM_TAG = DsInstanceTagConstants.SYSTEM.getTag();
+        private final String FILTER_SYSTEM_TAG = TagConstants.SYSTEM.getTag();
 
         @ApiModelProperty(value = "过滤系统标签对象")
         private Boolean filterTag;
 
     }
-
 
     @Data
     @EqualsAndHashCode(callSuper = true)

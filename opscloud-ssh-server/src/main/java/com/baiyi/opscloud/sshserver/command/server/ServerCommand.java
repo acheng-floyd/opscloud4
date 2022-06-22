@@ -4,7 +4,7 @@ import com.baiyi.opscloud.domain.param.server.ServerParam;
 import com.baiyi.opscloud.sshserver.annotation.CheckTerminalSize;
 import com.baiyi.opscloud.sshserver.annotation.InvokeSessionUser;
 import com.baiyi.opscloud.sshserver.annotation.ScreenClear;
-import com.baiyi.opscloud.sshserver.command.component.SshShellComponent;
+import com.baiyi.opscloud.sshserver.annotation.SshShellComponent;
 import com.baiyi.opscloud.sshserver.command.context.ListServerCommand;
 import com.baiyi.opscloud.sshserver.command.context.SessionCommandContext;
 import com.baiyi.opscloud.sshserver.command.server.base.BaseServerCommand;
@@ -27,7 +27,7 @@ public class ServerCommand extends BaseServerCommand {
     @ScreenClear
     @InvokeSessionUser(invokeAdmin = true)
     @ShellMethod(value = "查询授权服务器列表信息", key = {"ls", "list"})
-    public void listServer(@ShellOption(help = "Server Name", defaultValue = "") String name, @ShellOption(help = "IP", defaultValue = "") String ip) {
+    public void listServer(@ShellOption(help = "Server", defaultValue = "") String name, @ShellOption(help = "IP", defaultValue = "") String ip) {
         String sessionId = buildSessionId();
         ServerParam.UserPermissionServerPageQuery pageQuery = ServerParam.UserPermissionServerPageQuery.builder()
                 .name(name)
@@ -36,7 +36,7 @@ public class ServerCommand extends BaseServerCommand {
                 .build();
         ListServerCommand commandContext = ListServerCommand.builder()
                 .sessionId(sessionId)
-                .username(helper.getSshSession().getUsername())
+                .username(sshShellHelper.getSshSession().getUsername())
                 .queryParam(pageQuery)
                 .build();
         doListServer(commandContext);
@@ -53,7 +53,7 @@ public class ServerCommand extends BaseServerCommand {
             pageQuery.setPage(pageQuery.getPage() > 1 ? pageQuery.getPage() - 1 : pageQuery.getPage());
             ListServerCommand listServerCommand = ListServerCommand.builder()
                     .sessionId(sessionId)
-                    .username(helper.getSshSession().getUsername())
+                    .username(sshShellHelper.getSshSession().getUsername())
                     .queryParam(pageQuery)
                     .build();
             doListServer(listServerCommand);
@@ -73,7 +73,7 @@ public class ServerCommand extends BaseServerCommand {
             pageQuery.setPage(pageQuery.getPage() + 1);
             ListServerCommand listServerCommand = ListServerCommand.builder()
                     .sessionId(sessionId)
-                    .username(helper.getSshSession().getUsername())
+                    .username(sshShellHelper.getSshSession().getUsername())
                     .queryParam(pageQuery)
                     .build();
             doListServer(listServerCommand);

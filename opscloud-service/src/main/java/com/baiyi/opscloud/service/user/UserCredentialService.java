@@ -13,6 +13,8 @@ public interface UserCredentialService {
 
     List<UserCredential> queryByUserIdAndType(Integer userId, int credentialType);
 
+    int countByUserIdAndType(Integer userId, int credentialType);
+
     List<UserCredential> queryByUserId(Integer userId);
 
     UserCredential getById(Integer id);
@@ -20,5 +22,7 @@ public interface UserCredentialService {
     void add(UserCredential userCredential);
 
     void update(UserCredential userCredential);
+
+    void deleteById(int id);
 
 }

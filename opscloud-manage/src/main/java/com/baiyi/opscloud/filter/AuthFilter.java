@@ -5,29 +5,30 @@ import com.baiyi.opscloud.common.exception.auth.AuthRuntimeException;
 import com.baiyi.opscloud.common.util.GitlabTokenUtil;
 import com.baiyi.opscloud.config.properties.WhiteConfigurationProperties;
 import com.baiyi.opscloud.facade.auth.UserAuthFacade;
-import org.springframework.stereotype.Component;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 
 @Component
+@RequiredArgsConstructor
 public class AuthFilter extends OncePerRequestFilter {
 
-    @Resource
-    private UserAuthFacade userAuthFacade;
+    private final UserAuthFacade userAuthFacade;
 
-    @Resource
-    private WhiteConfigurationProperties whiteConfig;
+    private final WhiteConfigurationProperties whiteConfig;
 
     /**
      * 前端框架 token 名称
@@ -39,11 +40,10 @@ public class AuthFilter extends OncePerRequestFilter {
      */
     public static final String ACCESS_TOKEN = "AccessToken";
 
-
     public static final String GITLAB_TOKEN = "X-Gitlab-Token";
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         response.setContentType(APPLICATION_JSON_VALUE);
         if (!"options".equalsIgnoreCase(request.getMethod())) {
             String resourceName = request.getServletPath();
@@ -58,17 +58,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 return;
             }
             //静态资源不拦截
-            if (resourceName.endsWith(".js")
-                    || resourceName.endsWith(".md")
-                    || resourceName.endsWith(".css")
-                    || resourceName.endsWith(".woff")
-                    || resourceName.endsWith(".otf")
-                    || resourceName.endsWith(".eot")
-                    || resourceName.endsWith(".ttf")
-                    || resourceName.endsWith(".svg")
-                    || resourceName.endsWith(".jpg")
-                    || resourceName.endsWith(".png")
-                    || resourceName.endsWith(".html")) {
+            if (Stream.of(".js", ".md", ".css", ".woff", ".otf", ".eot", ".ttf", ".svg", ".jpg", ".png", ".html").anyMatch(resourceName::endsWith)) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -101,10 +91,7 @@ public class AuthFilter extends OncePerRequestFilter {
     }
 
     private boolean checkWhitelist(String resourceName) {
-        for (String resource : whiteConfig.getUrls())
-            if (resourceName.indexOf(resource) == 0)
-                return true;
-        return false;
+        return whiteConfig.getUrls().stream().anyMatch(resource -> resourceName.indexOf(resource) == 0);
     }
 
     private void setHeaders(HttpServletRequest request, HttpServletResponse response) {
@@ -116,6 +103,5 @@ public class AuthFilter extends OncePerRequestFilter {
         // 30 min
         // response.addHeader("Access-Control-Max-Age", "1800");
     }
-
 
 }

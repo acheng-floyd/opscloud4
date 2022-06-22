@@ -9,7 +9,6 @@ import lombok.*;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.io.Serializable;
 
 /**
  * @Author baiyi
@@ -82,18 +81,42 @@ public class WorkOrderTicketParam {
         private String approvalComment;
     }
 
-    @EqualsAndHashCode(callSuper = true)
     @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     @ApiModel
-    public static class SubmitTicket extends SaveTicket {
-        private static final long serialVersionUID = -925558688216913781L;
+    public static class OutApproveTicket {
+
+        @NotNull(message = "必须指定工单票据ID")
+        @ApiModelProperty(value = "工单票据ID")
+        private Integer ticketId;
+
+        @ApiModelProperty(value = "用户名")
+        private String username;
+
+        /**
+         * 审批动作，取值和说明如下：
+         * <p>
+         * AGREE：同意
+         * CANCEL：取消
+         * REJECT：拒绝
+         */
+        @ApiModelProperty(value = "审批动作")
+        private String approvalType;
+
+        @ApiModelProperty(value = "移动端审批令牌")
+        private String token;
+
     }
 
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     @Data
     @ApiModel
-    public static class SaveTicket implements Serializable {
+    public static class SubmitTicket {
 
-        private static final long serialVersionUID = -608339787175813785L;
         @NotNull(message = "必须指定工单票据ID")
         @ApiModelProperty(value = "工单票据ID")
         private Integer ticketId;

@@ -1,5 +1,6 @@
 package com.baiyi.opscloud.facade.workorder.impl;
 
+import com.baiyi.opscloud.common.util.PasswordUtil;
 import com.baiyi.opscloud.common.util.WorkflowUtil;
 import com.baiyi.opscloud.domain.generator.opscloud.*;
 import com.baiyi.opscloud.domain.vo.workorder.WorkflowVO;
@@ -44,7 +45,7 @@ public class WorkOrderTicketSubscriberFacadeImpl implements WorkOrderTicketSubsc
      * @param user
      */
     @Override
-    @Async(value = CORE)
+    //@Async(value = CORE)
     public void publish(WorkOrderTicket ticket, User user) {
         createSubscriber(ticket, user, SubscribeStatusConstants.CREATE);
     }
@@ -85,6 +86,8 @@ public class WorkOrderTicketSubscriberFacadeImpl implements WorkOrderTicketSubsc
                 .username(user.getUsername())
                 .subscribeStatus(constants.name())
                 .isActive(true)
+                // 生成64位长度随机Token
+                .token(PasswordUtil.generatorPW(64))
                 .comment(constants.getComment())
                 .build();
         ticketSubscriberService.add(subscriber);

@@ -11,19 +11,13 @@ import org.springframework.stereotype.Component;
 import javax.websocket.Session;
 
 /**
+ * 登出服务器节点
  * @Author baiyi
  * @Date 2020/5/11 5:19 下午
  * @Version 1.0
  */
 @Component
 public class LogoutProcessor extends AbstractServerTerminalProcessor<ServerMessage.Logout> {
-
-    /**
-     * 单个关闭
-     *
-     * @return
-     */
-
 
     @Override
     public String getState() {
@@ -36,7 +30,7 @@ public class LogoutProcessor extends AbstractServerTerminalProcessor<ServerMessa
         //  recordAuditLog(terminalSession, baseMessage.getInstanceId()); // 写审计日志
         //  AuditRecordHandler.formatCommanderLog(terminalSession.getSessionId(),baseMessage.getInstanceId());
         simpleTerminalSessionFacade.closeTerminalSessionInstance(terminalSession, baseMessage.getInstanceId()); // 设置关闭会话
-        auditServerCommandAudit.recordCommand(terminalSession.getSessionId(),baseMessage.getInstanceId());
+        serverCommandAudit.recordCommand(terminalSession.getSessionId(),baseMessage.getInstanceId());
         JSchSessionContainer.closeSession(terminalSession.getSessionId(), baseMessage.getInstanceId());
     }
 
@@ -44,4 +38,5 @@ public class LogoutProcessor extends AbstractServerTerminalProcessor<ServerMessa
     protected ServerMessage.Logout getMessage(String message) {
         return new GsonBuilder().create().fromJson(message, ServerMessage.Logout.class);
     }
+
 }

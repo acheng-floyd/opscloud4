@@ -31,6 +31,7 @@ public abstract class AbstractAssetRelationProvider<S, T> extends AbstractAssetB
 
     /**
      * 返回与目标资产建立关系的源资产
+     *
      * @param dsInstanceContext 数据源实例上下文
      * @param target            目标资产
      * @return
@@ -40,16 +41,15 @@ public abstract class AbstractAssetRelationProvider<S, T> extends AbstractAssetB
     private AbstractAssetRelationProvider<T, S> getTargetProvider() {
         List<AbstractAssetRelationProvider<T, S>> providers = AssetProviderFactory.getProviders(getInstanceType(), getTargetAssetKey());
         assert providers != null;
-        Optional<AbstractAssetRelationProvider<T, S>> optional = providers.stream()
-                .filter(e -> e.getTargetAssetKey().equals(this.getAssetType()))
-                .findFirst();
+        Optional<AbstractAssetRelationProvider<T, S>> optional = providers.stream().filter(e -> e.getTargetAssetKey().equals(this.getAssetType())).findFirst();
         return optional.orElse(null);
     }
 
     /**
      * 返回与源资产建立关系的目标资产
+     *
      * @param dsInstanceContext 数据源实例上下文
-     * @param source 源资产
+     * @param source            源资产
      * @return
      */
     protected List<T> listTarget(DsInstanceContext dsInstanceContext, S source) {
@@ -66,11 +66,9 @@ public abstract class AbstractAssetRelationProvider<S, T> extends AbstractAssetB
         List<DatasourceInstanceAssetRelation> validRelations = Lists.newArrayList();
         if (!CollectionUtils.isEmpty(targets)) {
             targets.forEach(target -> {
-                        DatasourceInstanceAssetRelation relation = enterEntity(dsInstanceContext, asset, target);
-                        if (relation != null)
-                            validRelations.add(relation);
-                    }
-            );
+                DatasourceInstanceAssetRelation relation = enterEntity(dsInstanceContext, asset, target);
+                if (relation != null) validRelations.add(relation);
+            });
         }
         clearInvalidRelations(dsInstanceContext, asset, validRelations);
         return asset;
@@ -85,13 +83,14 @@ public abstract class AbstractAssetRelationProvider<S, T> extends AbstractAssetB
      */
     private void clearInvalidRelations(DsInstanceContext dsInstanceContext, DatasourceInstanceAsset asset, List<DatasourceInstanceAssetRelation> validRelations) {
         Map<Integer, DatasourceInstanceAssetRelation> relationMap = validRelations.stream().collect(Collectors.toMap(DatasourceInstanceAssetRelation::getId, a -> a, (k1, k2) -> k1));
-        List<DatasourceInstanceAssetRelation> allRelations = dsInstanceAssetRelationService.queryTargetAsset(dsInstanceContext.getDsInstance().getUuid(), asset.getId());
-        allRelations.forEach(e -> {
-            if (!relationMap.containsKey(e.getId())) {
-                log.info("删除无效的资产绑定关系: datasource_instance_asset_relation_id = {}", e.getId());
-                dsInstanceAssetRelationService.deleteById(e.getId());
-            }
-        });
+        List<DatasourceInstanceAssetRelation> invalidRelations = dsInstanceAssetRelationService.queryTargetAsset(dsInstanceContext.getDsInstance().getUuid(), asset.getId()).stream().filter(e -> !relationMap.containsKey(e.getId())).collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(invalidRelations)) return;
+        invalidRelations.forEach(this::clearRelation);
+    }
+
+    private void clearRelation(DatasourceInstanceAssetRelation relation) {
+        log.info("删除无效的资产绑定关系: datasource_instance_asset_relation_id = {}", relation.getId());
+        dsInstanceAssetRelationService.deleteById(relation.getId());
     }
 
     private DatasourceInstanceAssetRelation enterEntity(DsInstanceContext dsInstanceContext, DatasourceInstanceAsset asset, T target) {
@@ -100,12 +99,7 @@ public abstract class AbstractAssetRelationProvider<S, T> extends AbstractAssetB
         AssetContainer assetContainer = targetAssetProvider.toAssetContainer(dsInstanceContext.getDsInstance(), target);
         DatasourceInstanceAsset targetAsset = dsInstanceAssetService.getByUniqueKey(assetContainer.getAsset());
         if (targetAsset == null) return null;
-        DatasourceInstanceAssetRelation relation = DatasourceInstanceAssetRelation.builder()
-                .instanceUuid(dsInstanceContext.getDsInstance().getUuid())
-                .sourceAssetId(asset.getId())
-                .targetAssetId(targetAsset.getId())
-                .relationType(getTargetAssetKey())
-                .build();
+        DatasourceInstanceAssetRelation relation = DatasourceInstanceAssetRelation.builder().instanceUuid(dsInstanceContext.getDsInstance().getUuid()).sourceAssetId(asset.getId()).targetAssetId(targetAsset.getId()).relationType(getTargetAssetKey()).build();
         return enterRelation(relation);
     }
 

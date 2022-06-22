@@ -4,7 +4,7 @@ import com.baiyi.opscloud.core.model.DsInstanceContext;
 import com.baiyi.opscloud.datasource.aliyun.converter.DmsAssetConverter;
 import com.baiyi.opscloud.datasource.aliyun.dms.entity.DmsUser;
 import com.baiyi.opscloud.domain.DataTable;
-import com.baiyi.opscloud.domain.constants.DsInstanceTagConstants;
+import com.baiyi.opscloud.domain.constants.TagConstants;
 import com.baiyi.opscloud.domain.generator.opscloud.BusinessTag;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstanceAsset;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstanceAssetProperty;
@@ -57,15 +57,15 @@ public class AliyunDmsUserPushHelper {
         List<DatasourceInstanceAsset> dmsUsers = queryDmsUsers(dsInstanceContext.getDsInstance().getUuid());
         Map<String, DatasourceInstanceAsset> dmsUserMap = dmsUsers.stream().collect(Collectors.toMap(DatasourceInstanceAsset::getAssetKey, a -> a, (k1, k2) -> k1));
         List<DmsUser.User> dmsUserList = Lists.newArrayList();
-        ramUsers.forEach(r -> {
+        ramUsers.forEach(ramUser -> {
             // assetId = RAM_USER_ID
-            if (dmsUserMap.containsKey(r.getAssetId()))
+            if (dmsUserMap.containsKey(ramUser.getAssetId()))
                 return; // 账户已存在
             // 查询用户手机号
             Optional<DatasourceInstanceAssetProperty> optionalProperty
-                    = dsInstanceAssetPropertyService.queryByAssetId(r.getId()).stream().filter(e -> "mobilePhone".equals(e.getName())).findFirst();
+                    = dsInstanceAssetPropertyService.queryByAssetId(ramUser.getId()).stream().filter(e -> "mobilePhone".equals(e.getName())).findFirst();
             if (optionalProperty.isPresent())
-                dmsUserList.add(DmsAssetConverter.toDmsUser(r,
+                dmsUserList.add(DmsAssetConverter.toDmsUser(ramUser,
                         optionalProperty.map(DatasourceInstanceAssetProperty::getValue).orElse(null)));
         });
         return dmsUserList;
@@ -85,7 +85,7 @@ public class AliyunDmsUserPushHelper {
                 .length(10000)
                 .build();
         DataTable<DatasourceInstanceAsset> table = dsInstanceAssetService.queryPageByParam(pageQuery);
-        Tag tag = tagService.getByTagKey(DsInstanceTagConstants.SYSTEM.name());
+        Tag tag = tagService.getByTagKey(TagConstants.SYSTEM.name());
         return table.getData().stream().filter(e -> {
             if (tag == null) return true;
             BusinessTag businessTag = BusinessTag.builder()

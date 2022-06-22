@@ -1,8 +1,12 @@
 package com.baiyi.opscloud.facade.workorder.impl;
 
+import com.baiyi.opscloud.common.HttpResult;
+import com.baiyi.opscloud.common.redis.RedisUtil;
+import com.baiyi.opscloud.common.util.BeanCopierUtil;
 import com.baiyi.opscloud.common.util.SessionUtil;
 import com.baiyi.opscloud.common.util.WorkflowUtil;
 import com.baiyi.opscloud.domain.DataTable;
+import com.baiyi.opscloud.domain.ErrorEnum;
 import com.baiyi.opscloud.domain.generator.opscloud.*;
 import com.baiyi.opscloud.domain.param.workorder.WorkOrderTicketEntryParam;
 import com.baiyi.opscloud.domain.param.workorder.WorkOrderTicketParam;
@@ -21,6 +25,7 @@ import com.baiyi.opscloud.workorder.constants.NodeTypeConstants;
 import com.baiyi.opscloud.workorder.constants.OrderTicketPhaseCodeConstants;
 import com.baiyi.opscloud.workorder.exception.TicketCommonException;
 import com.baiyi.opscloud.workorder.helper.TicketNoticeHelper;
+import com.baiyi.opscloud.workorder.helper.strategy.impl.SendAuditNotice;
 import com.baiyi.opscloud.workorder.processor.ITicketProcessor;
 import com.baiyi.opscloud.workorder.processor.factory.WorkOrderTicketProcessorFactory;
 import com.baiyi.opscloud.workorder.query.factory.WorkOrderTicketEntryQueryFactory;
@@ -66,17 +71,26 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
 
     private final TicketNoticeHelper ticketNoticeHelper;
 
+    private final RedisUtil redisUtil;
+
     @Override
     public DataTable<WorkOrderTicketVO.Ticket> queryTicketPage(WorkOrderTicketParam.TicketPageQuery pageQuery) {
         DataTable<WorkOrderTicket> table = ticketService.queryPageByParam(pageQuery);
-        return new DataTable<>(table.getData().stream().map(e -> ticketPacker.wrap(e, pageQuery)).collect(Collectors.toList()), table.getTotalNum());
+        List<WorkOrderTicketVO.Ticket> data = BeanCopierUtil.copyListProperties(table.getData(), WorkOrderTicketVO.Ticket.class).stream().peek(e ->
+                ticketPacker.wrap(e, pageQuery)
+        ).collect(Collectors.toList());
+        return new DataTable<>(data, table.getTotalNum());
     }
 
     @Override
     public DataTable<WorkOrderTicketVO.Ticket> queryMyTicketPage(WorkOrderTicketParam.MyTicketPageQuery pageQuery) {
         pageQuery.setUsername(SessionUtil.getUsername());
         DataTable<WorkOrderTicket> table = ticketService.queryPageByParam(pageQuery);
-        return new DataTable<>(table.getData().stream().map(e -> ticketPacker.wrap(e, pageQuery)).collect(Collectors.toList()), table.getTotalNum());
+
+        List<WorkOrderTicketVO.Ticket> data = BeanCopierUtil.copyListProperties(table.getData(), WorkOrderTicketVO.Ticket.class).stream().peek(e ->
+                ticketPacker.wrap(e, pageQuery)
+        ).collect(Collectors.toList());
+        return new DataTable<>(data, table.getTotalNum());
     }
 
     @Transactional(rollbackFor = {Exception.class})
@@ -92,7 +106,7 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
     }
 
     @Override
-    public WorkOrderTicketVO.TicketView saveTicket(WorkOrderTicketParam.SaveTicket saveTicket) {
+    public WorkOrderTicketVO.TicketView saveTicket(WorkOrderTicketParam.SubmitTicket saveTicket) {
         WorkOrderTicket workOrderTicket = ticketService.getById(saveTicket.getTicketId());
         preSaveHandle(workOrderTicket, saveTicket);
         return toTicketView(workOrderTicket);
@@ -132,6 +146,38 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
     }
 
     @Override
+    public HttpResult approveTicket(WorkOrderTicketParam.OutApproveTicket outApproveTicket) {
+        // 鉴权
+        String key = SendAuditNotice.buildKey(outApproveTicket.getTicketId(), outApproveTicket.getUsername());
+        if (!redisUtil.hasKey(key)) {
+            return new HttpResult(ErrorEnum.WORKORDER_INVALID_TOKEN);
+        }
+        String token = (String) redisUtil.get(key);
+        redisUtil.del(key);
+        if (!token.equals(outApproveTicket.getToken())) {
+            return new HttpResult(ErrorEnum.WORKORDER_INVALID_TOKEN);
+        }
+        SessionUtil.setUsername(outApproveTicket.getUsername());
+        WorkOrderTicketParam.ApproveTicket approveTicket = WorkOrderTicketParam.ApproveTicket.builder()
+                .ticketId(outApproveTicket.getTicketId())
+                .approvalType(outApproveTicket.getApprovalType())
+                .approvalComment(ApprovalTypeConstants.getDesc(outApproveTicket.getApprovalType()))
+                .build();
+        try {
+            this.approveTicket(approveTicket);
+        } catch (Exception e) {
+           return HttpResult.builder()
+                    .success(false)
+                    .msg("Approval failed")
+                    .build();
+        }
+        return HttpResult.builder()
+                .success(true)
+                .msg("Approval completed")
+                .build();
+    }
+
+    @Override
     public WorkOrderTicketVO.TicketView getTicketEntries(int ticketId, String workOrderKey) {
         return ticketPacker.toTicketEntries(ticketId, workOrderKey);
     }
@@ -145,7 +191,7 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
         ticketNodeFacade.verifyWorkflowNodes(workOrder, workOrderTicket);
     }
 
-    private void preSaveHandle(WorkOrderTicket workOrderTicket, WorkOrderTicketParam.SaveTicket saveTicket) {
+    private void preSaveHandle(WorkOrderTicket workOrderTicket, WorkOrderTicketParam.SubmitTicket saveTicket) {
         if (workOrderTicket == null)
             throw new TicketCommonException("工单不存在！");
         final String username = SessionUtil.getUsername();
@@ -164,7 +210,7 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
         });
     }
 
-    private void saveTicketComment(WorkOrderTicket workOrderTicket, WorkOrderTicketParam.SaveTicket saveTicket) {
+    private void saveTicketComment(WorkOrderTicket workOrderTicket, WorkOrderTicketParam.SubmitTicket saveTicket) {
         if (StringUtils.isEmpty(saveTicket.getComment())) {
             if (StringUtils.isEmpty(workOrderTicket.getComment()))
                 return;
@@ -251,6 +297,8 @@ public class WorkOrderTicketFacadeImpl implements WorkOrderTicketFacade {
         WorkOrderTicket workOrderTicket = ticketService.getById(ticketEntry.getWorkOrderTicketId());
         if (!OrderTicketPhaseCodeConstants.NEW.name().equals(workOrderTicket.getTicketPhase()))
             throw new TicketCommonException("只有新建工单才能修改或删除条目！");
+        if (!workOrderTicket.getUsername().equals(SessionUtil.getUsername()))
+            throw new TicketCommonException("不合法的请求: 只有工单创建人才能新增条目！");
         ticketEntryService.deleteById(ticketEntryId);
     }
 

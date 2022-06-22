@@ -18,7 +18,7 @@ package com.baiyi.opscloud.sshserver.command;
 
 import com.baiyi.opscloud.sshserver.SshShellHelper;
 import com.baiyi.opscloud.sshserver.SshShellProperties;
-import com.baiyi.opscloud.sshserver.command.component.SshShellComponent;
+import com.baiyi.opscloud.sshserver.annotation.SshShellComponent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.standard.ShellCommandGroup;
@@ -39,12 +39,12 @@ import java.util.List;
 @ShellCommandGroup("Built-In Commands")
 public class HistoryCommand implements History.Command {
 
-    private SshShellProperties properties;
+    private final SshShellProperties properties;
 
     @Resource
     private SshShellHelper helper;
 
-    private org.jline.reader.History history;
+    private final org.jline.reader.History history;
 
     public HistoryCommand(SshShellProperties properties, SshShellHelper helper,
                           @Lazy org.jline.reader.History history) {

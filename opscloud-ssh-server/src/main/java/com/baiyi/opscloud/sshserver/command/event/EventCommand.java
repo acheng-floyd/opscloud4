@@ -8,7 +8,7 @@ import com.baiyi.opscloud.domain.generator.opscloud.EventBusiness;
 import com.baiyi.opscloud.domain.generator.opscloud.Server;
 import com.baiyi.opscloud.domain.param.event.EventParam;
 import com.baiyi.opscloud.domain.vo.server.ServerVO;
-import com.baiyi.opscloud.event.IEventProcess;
+import com.baiyi.opscloud.event.IEventHandler;
 import com.baiyi.opscloud.event.enums.EventTypeEnum;
 import com.baiyi.opscloud.event.factory.EventFactory;
 import com.baiyi.opscloud.service.event.EventBusinessService;
@@ -17,14 +17,15 @@ import com.baiyi.opscloud.sshserver.PromptColor;
 import com.baiyi.opscloud.sshserver.annotation.CheckTerminalSize;
 import com.baiyi.opscloud.sshserver.annotation.InvokeSessionUser;
 import com.baiyi.opscloud.sshserver.annotation.ScreenClear;
-import com.baiyi.opscloud.sshserver.command.component.SshShellComponent;
+import com.baiyi.opscloud.sshserver.annotation.SshShellComponent;
 import com.baiyi.opscloud.sshserver.command.context.SessionCommandContext;
 import com.baiyi.opscloud.sshserver.command.event.base.EventContext;
 import com.baiyi.opscloud.sshserver.command.event.util.SeverityUtil;
+import com.baiyi.opscloud.sshserver.command.pagination.TableFooter;
 import com.baiyi.opscloud.sshserver.command.server.base.BaseServerCommand;
 import com.baiyi.opscloud.sshserver.command.util.ServerUtil;
-import com.baiyi.opscloud.sshserver.util.ServerTableUtil;
 import com.google.common.collect.Maps;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,6 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
@@ -46,10 +46,10 @@ import java.util.Map;
 @Slf4j
 @SshShellComponent
 @ShellCommandGroup("Event")
+@RequiredArgsConstructor
 public class EventCommand extends BaseServerCommand {
 
-    @Resource
-    private EventBusinessService eventBusinessService;
+    private final EventBusinessService eventBusinessService;
 
     private Terminal terminal;
 
@@ -77,12 +77,12 @@ public class EventCommand extends BaseServerCommand {
                 .fieldNames("ID",
                         "Severity",
                         "Event Name",
-                        "Server Name",
+                        "Server",
                         "IP",
                         "Lastchange Time",
                         "Accounts"
                 );
-        IEventProcess iEventProcess = EventFactory.getIEventProcessByEventType(EventTypeEnum.ZABBIX_PROBLEM);
+        IEventHandler iEventProcess = EventFactory.getIEventProcessByEventType(EventTypeEnum.ZABBIX_PROBLEM);
         DataTable<Event> table = iEventProcess.listEvent(pageQuery);
         Map<Integer, EventContext> eventMapper = Maps.newHashMap();
         int id = 1;
@@ -103,9 +103,8 @@ public class EventCommand extends BaseServerCommand {
                 eventBusinessService.deleteById(eventBusiness.getId());
                 continue;
             }
-            ServerVO.Server serverVO = BeanCopierUtil.copyProperties(server,ServerVO.Server.class);
+            ServerVO.Server serverVO = BeanCopierUtil.copyProperties(server, ServerVO.Server.class);
             sshServerPacker.wrap(serverVO);
-            //ServerVO.Server serverVO = sshServerPacker.wrapToVO(server);
             eventContext.setServerVO(serverVO);
             eventMapper.put(id, eventContext);
             pt.addRow(id,
@@ -119,11 +118,13 @@ public class EventCommand extends BaseServerCommand {
             id++;
         }
         SessionCommandContext.setEventMapper(eventMapper);
-        helper.print(pt.toString());
-        helper.print(ServerTableUtil.buildFooter(table.getTotalNum(),
-                        pageQuery.getPage(),
-                        pageQuery.getLength()),
-                PromptColor.GREEN);
+        sshShellHelper.print(pt.toString());
+        TableFooter.Footer.builder()
+                .totalNum(table.getTotalNum())
+                .page(pageQuery.getPage())
+                .length(pageQuery.getLength())
+                .build().print(sshShellHelper, PromptColor.GREEN);
+
     }
 
 }

@@ -43,6 +43,8 @@ public interface UserService {
 
     void updateBySelective(User user);
 
+    void updateMfa(User user);
+
     default List<User> listActive() {
         return listByIsActive(true);
     }
@@ -56,5 +58,7 @@ public interface UserService {
     List<User> listByPhone(String phone);
 
     List<User> queryByTagKeys(List<String> tagKeys);
+
+    DataTable<User> queryPageByParam(UserParam.EmployeeResignPageQuery pageQuery);
 
 }

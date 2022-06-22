@@ -35,7 +35,11 @@ public abstract class UserGroupExtendedTicketEntryQuery extends BaseTicketEntryQ
             return entries;
         if (ticketProcessor instanceof AbstractUserGroupPermissionExtendedAbstractUserPermission) {
             Set<String> groupNames = ((AbstractUserGroupPermissionExtendedAbstractUserPermission) ticketProcessor).getGroupNames();
-            entries.addAll(groupNames.stream().map(this::getEntryByName).collect(Collectors.toList()));
+            entries.addAll(groupNames.stream()
+                    .map(this::getEntryByName)
+                    .filter(UserGroup::getAllowOrder) // 过滤不允许工单申请的用户组（角色）
+                    .collect(Collectors.toList())
+            );
         }
         return entries;
     }
@@ -58,4 +62,5 @@ public abstract class UserGroupExtendedTicketEntryQuery extends BaseTicketEntryQ
                 .comment(entry.getComment())
                 .build();
     }
+
 }

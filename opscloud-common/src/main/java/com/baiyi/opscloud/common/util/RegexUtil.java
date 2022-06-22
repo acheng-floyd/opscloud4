@@ -3,6 +3,7 @@ package com.baiyi.opscloud.common.util;
 import com.baiyi.opscloud.common.exception.common.CommonRuntimeException;
 import com.baiyi.opscloud.domain.ErrorEnum;
 import org.apache.commons.lang3.StringUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,8 +16,8 @@ public class RegexUtil {
 
     private interface RegexMatches {
         String PHONE = "^1[3456789]\\d{9}$";
-        String USERNAME = "[a-zA-Z][\\w]{3,15}";
-        String SERVER_NAME = "[a-z][\\d0-9a-z-]{1,55}";
+        String USERNAME = "[a-zA-Z][\\d0-9a-zA-Z-_]{3,15}";
+        String SERVER_NAME = "[a-zA-Z][\\d0-9a-zA-Z-.]{1,55}";
         String SERVER_GROUP_NAME = "group_[a-z][\\d0-9a-z-]{2,64}";
         String EMAIL = "[A-z0-9-_\\.]+@([\\w]+[\\w-]*)(\\.[\\w]+[-\\w]*)+";
         String JOB_KEY = "[a-z0-9-_]{3,64}";
@@ -38,8 +39,10 @@ public class RegexUtil {
      * @param username
      * @return
      */
-    public static boolean isUsernameRule(String username) {
-        return username.matches(RegexMatches.USERNAME);
+    public static void isUsernameRule(String username) {
+        if (!username.matches(RegexMatches.USERNAME)) {
+            throw new CommonRuntimeException(ErrorEnum.USER_USERNAME_NON_COMPLIANCE_WITH_RULES);
+        }
     }
 
     /**
@@ -53,12 +56,9 @@ public class RegexUtil {
             throw new CommonRuntimeException(ErrorEnum.SERVERGROUP_NAME_NON_COMPLIANCE_WITH_RULES);
     }
 
-    public static boolean isUserGroupNameRule(String userGroupName) {
-        return isServerNameRule(userGroupName);
-    }
-
-    public static boolean isServerNameRule(String serverName) {
-        return serverName.matches(RegexMatches.SERVER_NAME);
+    public static void tryServerNameRule(String serverName) {
+        if (!serverName.matches(RegexMatches.SERVER_NAME))
+            throw new CommonRuntimeException(ErrorEnum.SERVER_NAME_NON_COMPLIANCE_WITH_RULES);
     }
 
     public static boolean isEmail(String email) {

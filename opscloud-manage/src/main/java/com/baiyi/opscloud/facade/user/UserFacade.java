@@ -7,10 +7,10 @@ import com.baiyi.opscloud.domain.param.user.UserBusinessPermissionParam;
 import com.baiyi.opscloud.domain.param.user.UserParam;
 import com.baiyi.opscloud.domain.vo.server.ServerTreeVO;
 import com.baiyi.opscloud.domain.vo.server.ServerVO;
-import com.baiyi.opscloud.domain.vo.user.AMVO;
+import com.baiyi.opscloud.domain.vo.user.AccessManagementVO;
 import com.baiyi.opscloud.domain.vo.user.AccessTokenVO;
 import com.baiyi.opscloud.domain.vo.user.UserVO;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -24,7 +24,7 @@ public interface UserFacade {
     DataTable<UserVO.User> queryUserPage(UserParam.UserPageQuery pageQuery);
 
     default UserVO.User getUserDetails() {
-        return getUserDetailsByUsername(Strings.EMPTY);
+        return getUserDetailsByUsername(StringUtils.EMPTY);
     }
 
     UserVO.User getUserDetailsByUsername(String username);
@@ -36,9 +36,9 @@ public interface UserFacade {
      */
     void syncUserPermissionGroupForAsset();
 
-    UserVO.User addUser(UserVO.User user);
+    UserVO.User addUser(UserParam.CreateUser createUser);
 
-    void updateUser(UserVO.User user);
+    void updateUser(UserParam.UpdateUser updateUser);
 
     void setUserActive(String username);
 
@@ -65,6 +65,24 @@ public interface UserFacade {
 
     DataTable<UserVO.User> queryBusinessPermissionUserPage(UserBusinessPermissionParam.BusinessPermissionUserPageQuery pageQuery);
 
-    List<AMVO.XAM> queryAmsUser(String username, String amType);
+    List<AccessManagementVO.XAccessManagement> queryAmsUser(String username, String amType);
+
+    /**
+     * 用户查询MFA
+     *
+     * @return
+     */
+    UserVO.UserMFA getUserMFA();
+
+    /**
+     * 用户重置MFA
+     *
+     * @return
+     */
+    UserVO.UserMFA resetUserMFA();
+
+    UserVO.UserMFA bindUserMFA(String otp);
+
+    UserVO.UserIAMMFA getUserIAMMFA();
 
 }

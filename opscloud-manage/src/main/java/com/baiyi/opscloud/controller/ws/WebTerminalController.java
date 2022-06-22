@@ -1,6 +1,7 @@
 package com.baiyi.opscloud.controller.ws;
 
 import com.baiyi.opscloud.common.model.HostInfo;
+import com.baiyi.opscloud.common.util.JSONUtil;
 import com.baiyi.opscloud.common.util.SessionUtil;
 import com.baiyi.opscloud.common.util.TimeUtil;
 import com.baiyi.opscloud.controller.ws.base.SimpleAuthentication;
@@ -9,17 +10,18 @@ import com.baiyi.opscloud.service.terminal.TerminalSessionService;
 import com.baiyi.opscloud.sshcore.builder.TerminalSessionBuilder;
 import com.baiyi.opscloud.sshcore.enums.MessageState;
 import com.baiyi.opscloud.sshcore.enums.SessionTypeEnum;
+import com.baiyi.opscloud.sshcore.message.ServerMessage;
 import com.baiyi.opscloud.sshcore.message.base.SimpleLoginMessage;
 import com.baiyi.opscloud.sshcore.task.terminal.SentOutputTask;
 import com.baiyi.opscloud.terminal.factory.TerminalProcessFactory;
 import com.google.gson.GsonBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.apache.commons.lang3.StringUtils;
+
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
-import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,13 +38,13 @@ public class WebTerminalController extends SimpleAuthentication {
 
     private static final AtomicInteger onlineCount = new AtomicInteger(0);
     // concurrent包的线程安全Set，用来存放每个客户端对应的Session对象。
-    private static final CopyOnWriteArraySet<Session> sessionSet = new CopyOnWriteArraySet<>();
+    private static final ThreadLocal<CopyOnWriteArraySet<Session>> sessionSet = ThreadLocal.withInitial(CopyOnWriteArraySet::new);
     // 当前会话 uuid
     private final String sessionId = UUID.randomUUID().toString();
 
     private Session session = null;
-    // 超时时间1H
-    public static final Long WEBSOCKET_TIMEOUT = TimeUtil.hourTime;
+    // 超时时间15分钟
+    public static final Long WEBSOCKET_TIMEOUT = TimeUtil.minuteTime * 15;
 
     private static final HostInfo serverInfo = HostInfo.build();
 
@@ -60,19 +62,24 @@ public class WebTerminalController extends SimpleAuthentication {
      */
     @OnOpen
     public void onOpen(Session session) {
-        log.info("终端会话尝试链接，sessionId = {}", sessionId);
-        TerminalSession terminalSession = TerminalSessionBuilder.build(sessionId, serverInfo, SessionTypeEnum.WEB_TERMINAL);
-        terminalSessionService.add(terminalSession);
-        this.terminalSession = terminalSession;
-        sessionSet.add(session);
-        int cnt = onlineCount.incrementAndGet(); // 在线数加1
-        log.info("有连接加入，当前连接数为：{}", cnt);
-        session.setMaxIdleTimeout(WEBSOCKET_TIMEOUT);
-        this.session = session;
-        // 线程启动
-        Runnable run = new SentOutputTask(sessionId, session);
-        Thread thread = new Thread(run);
-        thread.start();
+        try {
+            log.info("WebTerm尝试连接，sessionId = {}", sessionId);
+            TerminalSession terminalSession = TerminalSessionBuilder.build(sessionId, serverInfo, SessionTypeEnum.WEB_TERMINAL);
+            terminalSessionService.add(terminalSession);
+            this.terminalSession = terminalSession;
+            sessionSet.get().add(session);
+            int cnt = onlineCount.incrementAndGet(); // 在线数加1
+            log.info("WebTerm有连接加入，当前连接数为：{}", cnt);
+            session.setMaxIdleTimeout(WEBSOCKET_TIMEOUT);
+            this.session = session;
+            // 线程启动
+            Runnable run = new SentOutputTask(sessionId, session);
+            Thread thread = new Thread(run);
+            thread.start();
+        } catch (Exception e) {
+            log.error("WebTerm创建连接错误！");
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -80,10 +87,15 @@ public class WebTerminalController extends SimpleAuthentication {
      */
     @OnClose
     public void onClose() {
-        TerminalProcessFactory.getProcessByKey(MessageState.CLOSE.getState()).process("", session, terminalSession);
-        sessionSet.remove(session);
-        int cnt = onlineCount.decrementAndGet();
-        log.info("有连接关闭，当前连接数为：{}", cnt);
+        try {
+            TerminalProcessFactory.getProcessByKey(MessageState.CLOSE.getState()).process("", session, terminalSession);
+            sessionSet.get().remove(session);
+            int cnt = onlineCount.decrementAndGet();
+            log.info("有连接关闭当前连接数为: {}", cnt);
+        } catch (Exception e) {
+            log.error("WebTerm OnClose错误！");
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -98,14 +110,14 @@ public class WebTerminalController extends SimpleAuthentication {
         String state = getState(message);
         if (StringUtils.isEmpty(this.terminalSession.getUsername())) {
             if (MessageState.LOGIN.getState().equals(state))       // 鉴权并更新会话信息
-                setUser(authentication(new GsonBuilder().create().fromJson(message, SimpleLoginMessage.class)));
+                updateSessionUsername(hasLogin(new GsonBuilder().create().fromJson(message, SimpleLoginMessage.class)));
         } else {
             SessionUtil.setUsername(this.terminalSession.getUsername());
         }
         TerminalProcessFactory.getProcessByKey(state).process(message, session, terminalSession);
     }
 
-    private void setUser(String username) {
+    private void updateSessionUsername(String username) {
         terminalSession.setUsername(username);
         terminalSessionService.update(terminalSession);
     }
@@ -119,58 +131,11 @@ public class WebTerminalController extends SimpleAuthentication {
     @OnError
     public void onError(Session session, Throwable error) {
         log.error("发生错误：{}，Session ID： {}", error.getMessage(), session.getId());
-        error.printStackTrace();
-    }
-
-    /**
-     * 发送消息，实践表明，每次浏览器刷新，session会发生变化。
-     *
-     * @param session
-     * @param message
-     */
-    public static void sendMessage(Session session, String message) {
-        try {
-            session.getBasicRemote().sendText(message);
-        } catch (IOException e) {
-            log.error("发送消息出错：{}", e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 群发消息
-     *
-     * @param message
-     * @throws IOException
-     */
-    public static void broadCastInfo(String message) throws IOException {
-        for (Session session : sessionSet) {
-            if (session.isOpen()) {
-                sendMessage(session, message);
-            }
-        }
-    }
-
-    /**
-     * 指定Session发送消息
-     *
-     * @param sessionId
-     * @param message
-     * @throws IOException
-     */
-    public static void sendMessage(String message, String sessionId) throws IOException {
-        Session session = null;
-        for (Session s : sessionSet) {
-            if (s.getId().equals(sessionId)) {
-                session = s;
-                break;
-            }
-        }
-        if (session != null) {
-            sendMessage(session, message);
-        } else {
-            log.warn("没有找到你指定ID的会话：{}", sessionId);
-        }
+        ServerMessage.BaseMessage closeMessage = ServerMessage.BaseMessage.builder()
+                .state(MessageState.CLOSE.getState())
+                .build();
+        TerminalProcessFactory.getProcessByKey(MessageState.CLOSE.getState())
+                .process(JSONUtil.writeValueAsString(closeMessage), session, terminalSession);
     }
 
 }

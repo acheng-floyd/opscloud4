@@ -45,7 +45,9 @@ public class DsFacadeImpl implements DsFacade {
     @Override
     public DataTable<DsConfigVO.DsConfig> queryDsConfigPage(DsConfigParam.DsConfigPageQuery pageQuery) {
         DataTable<DatasourceConfig> table = dsConfigService.queryPageByParam(pageQuery);
-        return new DataTable<>(dsConfigPacker.wrapVOList(table.getData(), pageQuery), table.getTotalNum());
+        List<DsConfigVO.DsConfig> data = BeanCopierUtil.copyListProperties(table.getData(), DsConfigVO.DsConfig.class).stream()
+                .peek(e -> dsConfigPacker.wrap(e, pageQuery)).collect(Collectors.toList());
+        return new DataTable<>(data, table.getTotalNum());
     }
 
     @Override
@@ -62,8 +64,8 @@ public class DsFacadeImpl implements DsFacade {
 
     @Override
     public List<DsInstanceVO.Instance> queryDsInstance(DsInstanceParam.DsInstanceQuery query) {
-        List<DatasourceInstance> instanceList = dsInstanceService.queryByParam(query);
-        return BeanCopierUtil.copyListProperties(instanceList, DsInstanceVO.Instance.class)
+        List<DatasourceInstance> instances = dsInstanceService.queryByParam(query);
+        return BeanCopierUtil.copyListProperties(instances, DsInstanceVO.Instance.class)
                 .stream().peek(e -> dsInstancePacker.wrap(e, query)).collect(Collectors.toList());
     }
 
@@ -81,12 +83,15 @@ public class DsFacadeImpl implements DsFacade {
     @Override
     public DsInstanceVO.Instance queryDsInstanceById(int instanceId) {
         DatasourceInstance instance = dsInstanceService.getById(instanceId);
-        return DsInstancePacker.toVO(instance);
+        return BeanCopierUtil.copyProperties(instance, DsInstanceVO.Instance.class);
     }
 
     @Override
     public DsConfigVO.DsConfig queryDsConfigById(int configId) {
         DatasourceConfig config = dsConfigService.getById(configId);
-        return dsConfigPacker.wrapVO(config, SimpleExtend.EXTEND);
+        DsConfigVO.DsConfig result = BeanCopierUtil.copyProperties(config, DsConfigVO.DsConfig.class);
+        dsConfigPacker.wrap(result, SimpleExtend.EXTEND);
+        return result;
     }
+
 }

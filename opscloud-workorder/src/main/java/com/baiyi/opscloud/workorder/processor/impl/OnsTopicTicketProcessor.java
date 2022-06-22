@@ -4,19 +4,20 @@ import com.aliyuncs.exceptions.ClientException;
 import com.baiyi.opscloud.common.constants.enums.DsTypeEnum;
 import com.baiyi.opscloud.common.datasource.AliyunConfig;
 import com.baiyi.opscloud.datasource.aliyun.ons.constants.OnsMessageTypeConstants;
-import com.baiyi.opscloud.datasource.aliyun.ons.drive.AliyunOnsRocketMqTopicDrive;
+import com.baiyi.opscloud.datasource.aliyun.ons.driver.AliyunOnsRocketMqTopicDriver;
 import com.baiyi.opscloud.datasource.aliyun.ons.entity.OnsRocketMqTopic;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstanceAsset;
 import com.baiyi.opscloud.domain.generator.opscloud.WorkOrderTicketEntry;
+import com.baiyi.opscloud.domain.param.workorder.WorkOrderTicketEntryParam;
 import com.baiyi.opscloud.workorder.constants.WorkOrderKeyConstants;
 import com.baiyi.opscloud.workorder.exception.TicketProcessException;
 import com.baiyi.opscloud.workorder.exception.TicketVerifyException;
 import com.baiyi.opscloud.workorder.processor.impl.extended.AbstractDsAssetExtendedBaseTicketProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OnsTopicTicketProcessor extends AbstractDsAssetExtendedBaseTicketProcessor<OnsRocketMqTopic.Topic, AliyunConfig> {
 
-    private final AliyunOnsRocketMqTopicDrive aliyunOnsRocketMqTopicDrive;
+    private final AliyunOnsRocketMqTopicDriver aliyunOnsRocketMqTopicDrive;
 
     @Override
     public String getKey() {
@@ -51,7 +52,7 @@ public class OnsTopicTicketProcessor extends AbstractDsAssetExtendedBaseTicketPr
     }
 
     @Override
-    public void verifyHandle(WorkOrderTicketEntry ticketEntry) throws TicketVerifyException {
+    public void verifyHandle(WorkOrderTicketEntryParam.TicketEntry ticketEntry) throws TicketVerifyException {
         OnsRocketMqTopic.Topic entry = this.toEntry(ticketEntry.getContent());
         if (StringUtils.isEmpty(entry.getTopic()))
             throw new TicketVerifyException("校验工单条目失败: 未指定Topic名称!");
@@ -65,7 +66,7 @@ public class OnsTopicTicketProcessor extends AbstractDsAssetExtendedBaseTicketPr
                 .name(entry.getTopic())
                 .build();
         List<DatasourceInstanceAsset> list = dsInstanceAssetService.queryAssetByAssetParam(asset);
-        if (CollectionUtils.isNotEmpty(list)) {
+        if (!CollectionUtils.isEmpty(list)) {
             if (list.stream().anyMatch(e -> !e.getKind().equals(OnsMessageTypeConstants.getDesc(entry.getMessageType())))) {
                 throw new TicketVerifyException("校验工单条目失败: Topic类型与其他环境不一致，请选择" + list.get(0).getKind());
             }

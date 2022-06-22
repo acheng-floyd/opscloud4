@@ -13,9 +13,9 @@ import com.baiyi.opscloud.sshserver.PromptColor;
 import com.baiyi.opscloud.sshserver.SshShellHelper;
 import com.baiyi.opscloud.sshserver.command.context.ListServerCommand;
 import com.baiyi.opscloud.sshserver.command.context.SessionCommandContext;
+import com.baiyi.opscloud.sshserver.command.pagination.TableFooter;
 import com.baiyi.opscloud.sshserver.command.util.ServerUtil;
 import com.baiyi.opscloud.sshserver.packer.SshServerPacker;
-import com.baiyi.opscloud.sshserver.util.ServerTableUtil;
 import com.baiyi.opscloud.sshserver.util.SessionUtil;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
@@ -29,6 +29,8 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.baiyi.opscloud.sshserver.constants.TableConstants.TABLE_SERVER_FIELD_NAMES;
 
 
 /**
@@ -44,7 +46,7 @@ public class BaseServerCommand {
     private static final int COMMENT_MAX_SIZE = 20;
 
     @Resource
-    protected SshShellHelper helper;
+    protected SshShellHelper sshShellHelper;
 
     @Resource
     protected ServerService serverService;
@@ -71,16 +73,7 @@ public class BaseServerCommand {
     }
 
     protected void doListServer(ListServerCommand commandContext) {
-        PrettyTable pt = PrettyTable
-                .fieldNames("ID",
-                        "Server Name",
-                        "ServerGroup Name",
-                        "Env",
-                        "IP",
-                        "Tag",
-                        "Account",
-                        "Comment"
-                );
+        PrettyTable pt = PrettyTable.fieldNames(TABLE_SERVER_FIELD_NAMES);
         ServerParam.UserPermissionServerPageQuery pageQuery = commandContext.getQueryParam();
         pageQuery.setUserId(com.baiyi.opscloud.common.util.SessionUtil.getIsAdmin() ? null : com.baiyi.opscloud.common.util.SessionUtil.getUserId());
         pageQuery.setLength(terminal.getSize().getRows() - PAGE_FOOTER_SIZE);
@@ -103,11 +96,13 @@ public class BaseServerCommand {
             id++;
         }
         SessionCommandContext.setIdMapper(idMapper);
-        helper.print(pt.toString());
-        helper.print(ServerTableUtil.buildPagination(table.getTotalNum(),
-                        pageQuery.getPage(),
-                        pageQuery.getLength()),
-                PromptColor.GREEN);
+        sshShellHelper.print(pt.toString());
+        TableFooter.Pagination.builder()
+                .needPageTurning(true)
+                .totalNum(table.getTotalNum())
+                .page(pageQuery.getPage())
+                .length(pageQuery.getLength())
+                .build().print(sshShellHelper, PromptColor.GREEN);
     }
 
     private String toCommentField(String comment) {
@@ -141,8 +136,7 @@ public class BaseServerCommand {
     }
 
     protected String buildSessionId() {
-        return SessionUtil.buildSessionId(helper.getSshSession().getIoSession());
+        return SessionUtil.buildSessionId(sshShellHelper.getSshSession().getIoSession());
     }
-
 
 }

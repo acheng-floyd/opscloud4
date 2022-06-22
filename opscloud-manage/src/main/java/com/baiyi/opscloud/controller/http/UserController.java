@@ -12,6 +12,8 @@ import com.baiyi.opscloud.domain.param.user.UserParam;
 import com.baiyi.opscloud.domain.vo.server.ServerTreeVO;
 import com.baiyi.opscloud.domain.vo.server.ServerVO;
 import com.baiyi.opscloud.domain.vo.user.*;
+import com.baiyi.opscloud.facade.UserCredentialFacade;
+import com.baiyi.opscloud.facade.user.UserPermissionFacade;
 import com.baiyi.opscloud.facade.user.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -63,10 +65,10 @@ public class UserController {
         return new HttpResult<>(userFacade.getUserDetailsByUsername(username));
     }
 
-    @ApiOperation(value = "保存用户凭证")
+    @ApiOperation(value = "保存用户凭据")
     @PostMapping(value = "/credential/save", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<Boolean> saveUserCredential(@RequestBody @Valid UserCredentialVO.Credential credential) {
-        userCredentialFacade.saveUserCredential(credential);
+        userCredentialFacade.saveCredential(credential);
         return HttpResult.SUCCESS;
     }
 
@@ -78,14 +80,14 @@ public class UserController {
 
     @ApiOperation(value = "新增用户")
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public HttpResult<UserVO.User> addUser(@RequestBody @Valid UserVO.User user) {
-        return new HttpResult<>(userFacade.addUser(user));
+    public HttpResult<UserVO.User> addUser(@RequestBody @Valid UserParam.CreateUser createUser) {
+        return new HttpResult<>(userFacade.addUser(createUser));
     }
 
     @ApiOperation(value = "更新用户")
     @PutMapping(value = "/update", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public HttpResult<Boolean> updateUser(@RequestBody @Valid UserVO.User user) {
-        userFacade.updateUser(user);
+    public HttpResult<Boolean> updateUser(@RequestBody @Valid UserParam.UpdateUser updateUser) {
+        userFacade.updateUser(updateUser);
         return HttpResult.SUCCESS;
     }
 
@@ -197,7 +199,7 @@ public class UserController {
 
     @ApiOperation(value = "查询用户AM授权信息")
     @GetMapping(value = "/am/get", produces = MediaType.APPLICATION_JSON_VALUE)
-    public HttpResult<List<AMVO.XAM>> queryAmsByUser(@RequestParam @Valid String username, @Valid String amType) {
+    public HttpResult<List<AccessManagementVO.XAccessManagement>> queryAmsByUser(@RequestParam @Valid String username, @Valid String amType) {
         return new HttpResult<>(userFacade.queryAmsUser(username, amType));
     }
 
@@ -220,6 +222,30 @@ public class UserController {
     public HttpResult<Boolean> revokeAmPolicy(@RequestBody @Valid UserAmParam.RevokePolicy revokePolicy) {
         userAmFacade.revokePolicy(revokePolicy);
         return HttpResult.SUCCESS;
+    }
+
+    @ApiOperation(value = "用户查询MFA详情")
+    @GetMapping(value = "/mfa/get", produces = MediaType.APPLICATION_JSON_VALUE)
+    public HttpResult<UserVO.UserMFA> getUserMFA() {
+        return new HttpResult<>(userFacade.getUserMFA());
+    }
+
+    @ApiOperation(value = "用户重置MFA")
+    @GetMapping(value = "/mfa/reset", produces = MediaType.APPLICATION_JSON_VALUE)
+    public HttpResult<UserVO.UserMFA> resetUserMFA() {
+        return new HttpResult<>(userFacade.resetUserMFA());
+    }
+
+    @ApiOperation(value = "用户绑定MFA")
+    @GetMapping(value = "/mfa/bind", produces = MediaType.APPLICATION_JSON_VALUE)
+    public HttpResult<UserVO.UserMFA> bindUserMFA(@RequestParam @Valid String otp) {
+        return new HttpResult<>(userFacade.bindUserMFA(otp));
+    }
+
+    @ApiOperation(value = "用户查询IAM-MFA详情")
+    @GetMapping(value = "/mfa/iam/get", produces = MediaType.APPLICATION_JSON_VALUE)
+    public HttpResult<UserVO.UserIAMMFA> getUserIAMMFA() {
+        return new HttpResult<>(userFacade.getUserIAMMFA());
     }
 
 }

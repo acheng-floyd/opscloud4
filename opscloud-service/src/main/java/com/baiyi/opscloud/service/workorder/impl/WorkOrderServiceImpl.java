@@ -1,5 +1,6 @@
 package com.baiyi.opscloud.service.workorder.impl;
 
+import com.baiyi.opscloud.common.config.CachingConfiguration;
 import com.baiyi.opscloud.common.util.IdUtil;
 import com.baiyi.opscloud.domain.DataTable;
 import com.baiyi.opscloud.domain.generator.opscloud.WorkOrder;
@@ -9,6 +10,8 @@ import com.baiyi.opscloud.service.workorder.WorkOrderService;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import tk.mybatis.mapper.entity.Example;
 
@@ -29,8 +32,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     public DataTable<WorkOrder> queryPageByParam(WorkOrderParam.WorkOrderPageQuery pageQuery) {
         Page page = PageHelper.startPage(pageQuery.getPage(), pageQuery.getLength());
         Example example = new Example(WorkOrder.class);
+        Example.Criteria criteria = example.createCriteria();
         if (IdUtil.isNotEmpty(pageQuery.getWorkOrderGroupId())) {
-            Example.Criteria criteria = example.createCriteria();
             criteria.andEqualTo("workOrderGroupId", pageQuery.getWorkOrderGroupId());
         }
         example.setOrderByClause("work_order_group_id, seq");
@@ -56,6 +59,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     @Override
+    @Cacheable(cacheNames = CachingConfiguration.Repositories.CACHE_1HOUR, key = "'workorder_id_' + #id", unless = "#result == null")
     public WorkOrder getById(int id) {
         return workOrderMapper.selectByPrimaryKey(id);
     }
@@ -69,6 +73,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     }
 
     @Override
+    @CacheEvict(cacheNames = CachingConfiguration.Repositories.CACHE_1HOUR, key = "'workorder_id_' + #workOrder.id")
     public void update(WorkOrder workOrder) {
         workOrderMapper.updateByPrimaryKey(workOrder);
     }

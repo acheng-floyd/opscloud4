@@ -7,9 +7,9 @@ import com.baiyi.opscloud.core.factory.AssetProviderFactory;
 import com.baiyi.opscloud.core.model.DsInstanceContext;
 import com.baiyi.opscloud.core.provider.asset.BaseAssetProvider;
 import com.baiyi.opscloud.core.util.AssetUtil;
-import com.baiyi.opscloud.datasource.kubernetes.convert.PodAssetConvert;
-import com.baiyi.opscloud.datasource.kubernetes.drive.KubernetesNamespaceDrive;
-import com.baiyi.opscloud.datasource.kubernetes.drive.KubernetesPodDrive;
+import com.baiyi.opscloud.datasource.kubernetes.converter.PodAssetConverter;
+import com.baiyi.opscloud.datasource.kubernetes.driver.KubernetesNamespaceDriver;
+import com.baiyi.opscloud.datasource.kubernetes.driver.KubernetesPodDriver;
 import com.baiyi.opscloud.domain.builder.asset.AssetContainer;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceConfig;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstance;
@@ -51,22 +51,22 @@ public class KubernetesPodProvider extends BaseAssetProvider<Pod> {
         return dsConfigHelper.build(dsConfig, KubernetesConfig.class).getKubernetes();
     }
 
-    public List<AssetContainer> queryAssetsByDeployment(int dsInstanceId, String namespace,String deployment) {
+    public List<AssetContainer> queryAssetsByDeployment(int dsInstanceId, String namespace, String deployment) {
         DsInstanceContext dsInstanceContext = buildDsInstanceContext(dsInstanceId);
         KubernetesConfig.Kubernetes kubernetes = buildConfig(dsInstanceContext.getDsConfig());
-        List<Pod> pods = KubernetesPodDrive.listPod(kubernetes, namespace, deployment);
-        return pods.stream().map(e->
-                toAssetContainer(dsInstanceContext.getDsInstance(),e)
+        List<Pod> pods = KubernetesPodDriver.listPod(kubernetes, namespace, deployment);
+        return pods.stream().map(e ->
+                toAssetContainer(dsInstanceContext.getDsInstance(), e)
         ).collect(Collectors.toList());
     }
 
     @Override
     protected List<Pod> listEntities(DsInstanceContext dsInstanceContext) {
         KubernetesConfig.Kubernetes kubernetes = buildConfig(dsInstanceContext.getDsConfig());
-        List<Namespace> namespaces = KubernetesNamespaceDrive.listNamespace(buildConfig(dsInstanceContext.getDsConfig()));
+        List<Namespace> namespaces = KubernetesNamespaceDriver.listNamespace(buildConfig(dsInstanceContext.getDsConfig()));
         List<Pod> pods = Lists.newArrayList();
         namespaces.forEach(e ->
-                pods.addAll(KubernetesPodDrive.listPod(kubernetes, e.getMetadata().getName()))
+                pods.addAll(KubernetesPodDriver.listPod(kubernetes, e.getMetadata().getName()))
         );
         return pods;
     }
@@ -94,7 +94,9 @@ public class KubernetesPodProvider extends BaseAssetProvider<Pod> {
 
     @Override
     protected AssetContainer toAssetContainer(DatasourceInstance dsInstance, Pod entity) {
-        return PodAssetConvert.toAssetContainer(dsInstance, entity);
+        DsInstanceContext dsInstanceContext = buildDsInstanceContext(dsInstance.getId());
+        KubernetesConfig.Kubernetes kubernetes = buildConfig(dsInstanceContext.getDsConfig());
+        return PodAssetConverter.toAssetContainer(dsInstance, kubernetes, entity);
     }
 
     @Override

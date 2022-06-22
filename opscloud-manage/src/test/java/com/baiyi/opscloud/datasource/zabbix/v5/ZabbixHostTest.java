@@ -1,6 +1,6 @@
 package com.baiyi.opscloud.datasource.zabbix.v5;
 
-import com.baiyi.opscloud.datasource.business.server.impl.ZabbixHostServerProvider;
+import com.baiyi.opscloud.datasource.business.server.impl.ZabbixHostServerHandler;
 import com.baiyi.opscloud.datasource.zabbix.base.BaseZabbixTest;
 import com.baiyi.opscloud.domain.DataTable;
 import com.baiyi.opscloud.domain.generator.opscloud.DatasourceInstance;
@@ -8,7 +8,7 @@ import com.baiyi.opscloud.domain.generator.opscloud.Server;
 import com.baiyi.opscloud.domain.param.server.ServerParam;
 import com.baiyi.opscloud.service.datasource.DsInstanceService;
 import com.baiyi.opscloud.service.server.ServerService;
-import com.baiyi.opscloud.zabbix.v5.drive.ZabbixV5HostDrive;
+import com.baiyi.opscloud.zabbix.v5.driver.ZabbixV5HostDriver;
 import com.baiyi.opscloud.zabbix.v5.entity.ZabbixHost;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -25,10 +25,10 @@ import java.util.List;
 public class ZabbixHostTest extends BaseZabbixTest {
 
     @Resource
-    private ZabbixV5HostDrive zabbixV5HostDrive;
+    private ZabbixV5HostDriver zabbixV5HostDrive;
 
     @Resource
-    private ZabbixHostServerProvider zabbixHostServerProvider;
+    private ZabbixHostServerHandler zabbixHostServerProvider;
 
     @Resource
     private DsInstanceService dsInstanceService;
